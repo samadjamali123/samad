@@ -1,0 +1,761 @@
+[
+  {
+    "disease_id": "tomato_early_blight",
+    "plant_name": "Tomato",
+    "disease_name": "Early Blight",
+    "scientific_name": "Alternaria solani",
+    "description": "Fungal disease causing dark brown spots with concentric rings on lower leaves, leading to defoliation and reduced fruit production.",
+    "symptoms": [
+      "Dark brown to black lesions on lower leaves",
+      "Concentric rings forming target-like pattern",
+      "Yellowing around spots (chlorosis)",
+      "Leaf defoliation in severe cases",
+      "Stem cankers near ground level"
+    ],
+    "causes": [
+      "Fungal pathogen Alternaria solani",
+      "Warm humid conditions (75-85°F)",
+      "High humidity or extended leaf wetness",
+      "Poor air circulation around plants",
+      "Infected seeds or plant debris"
+    ],
+    "spread_methods": [
+      "Wind-borne spores",
+      "Water splashes from rain or irrigation",
+      "Infected seeds",
+      "Contaminated tools and equipment",
+      "Plant debris in soil"
+    ],
+    "environmental_factors": {
+      "temperature_range": "75-85°F (24-29°C)",
+      "humidity_required": ">90% relative humidity",
+      "susceptible_stages": "Flowering to fruit development",
+      "optimal_conditions": "Warm, humid weather with poor air circulation"
+    },
+    "severity_levels": {
+      "mild": "<10% leaf area affected with scattered spots",
+      "moderate": "10-30% leaf area affected with coalescing lesions",
+      "severe": ">30% leaf area affected with extensive defoliation"
+    },
+    "reference_images": [
+      "database/reference_images/tomato_early_blight_1.jpg",
+      "database/reference_images/tomato_early_blight_2.jpg",
+      "database/reference_images/tomato_early_blight_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "tomato_late_blight",
+    "plant_name": "Tomato",
+    "disease_name": "Late Blight",
+    "scientific_name": "Phytophthora infestans",
+    "description": "Devastating oomycete disease causing water-soaked lesions that rapidly expand and destroy entire plants.",
+    "symptoms": [
+      "Water-soaked lesions on leaves and stems",
+      "White fungal growth on undersides of leaves in humid conditions",
+      "Dark brown to black lesions on stems",
+      "Firm, brown lesions on fruits",
+      "Rapid plant death in favorable conditions"
+    ],
+    "causes": [
+      "Oomycete Phytophthora infestans",
+      "Cool, wet weather (60-70°F)",
+      "High humidity and rainfall",
+      "Infected transplants or seed potatoes"
+    ],
+    "spread_methods": [
+      "Spores spread by wind and rain",
+      "Infected soil and plant debris",
+      "Contaminated transplants",
+      "Water movement in soil"
+    ],
+    "environmental_factors": {
+      "temperature_range": "60-70°F (15-21°C)",
+      "humidity_required": ">90% humidity",
+      "susceptible_stages": "All stages, especially flowering",
+      "optimal_conditions": "Cool, wet weather with extended leaf wetness"
+    },
+    "severity_levels": {
+      "mild": "Small, isolated water-soaked spots",
+      "moderate": "Expanding lesions with some plant tissue death",
+      "severe": "Extensive lesions leading to plant death"
+    },
+    "reference_images": [
+      "database/reference_images/tomato_late_blight_1.jpg",
+      "database/reference_images/tomato_late_blight_2.jpg",
+      "database/reference_images/tomato_late_blight_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "tomato_septoria_leaf_spot",
+    "plant_name": "Tomato",
+    "disease_name": "Septoria Leaf Spot",
+    "scientific_name": "Septoria lycopersici",
+    "description": "Fungal disease causing small circular spots with dark borders and gray centers on lower leaves.",
+    "symptoms": [
+      "Small circular spots (2-3mm) on lower leaves",
+      "Dark brown borders with grayish-white centers",
+      "Black fruiting bodies visible in spot centers",
+      "Yellowing and death of affected leaves",
+      "Progression from bottom to top of plant"
+    ],
+    "causes": [
+      "Fungal pathogen Septoria lycopersici",
+      "Moderate temperatures (68-77°F)",
+      "High humidity and leaf wetness",
+      "Infected plant debris"
+    ],
+    "spread_methods": [
+      "Rain splash dispersing spores",
+      "Wind carrying conidia",
+      "Contaminated tools",
+      "Infected transplants"
+    ],
+    "environmental_factors": {
+      "temperature_range": "68-77°F (20-25°C)",
+      "humidity_required": ">85% relative humidity",
+      "susceptible_stages": "Vegetative growth and fruiting",
+      "optimal_conditions": "Moderate temperatures with frequent rain"
+    },
+    "severity_levels": {
+      "mild": "Few spots on lower leaves",
+      "moderate": "Numerous spots causing leaf yellowing",
+      "severe": "Extensive spotting leading to severe defoliation"
+    },
+    "reference_images": [
+      "database/reference_images/tomato_septoria_1.jpg",
+      "database/reference_images/tomato_septoria_2.jpg",
+      "database/reference_images/tomato_septoria_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "potato_late_blight",
+    "plant_name": "Potato",
+    "disease_name": "Late Blight",
+    "scientific_name": "Phytophthora infestans",
+    "description": "Devastating disease responsible for Irish potato famine, causing rapid destruction of foliage and tubers.",
+    "symptoms": [
+      "Water-soaked lesions on leaves and stems",
+      "White fungal growth on leaf undersides",
+      "Dark brown lesions on tubers",
+      "Rapid plant collapse in favorable conditions",
+      "Dry, firm rot in stored tubers"
+    ],
+    "causes": [
+      "Oomycete Phytophthora infestans",
+      "Cool, wet conditions",
+      "Infected seed potatoes",
+      "Infected plant debris"
+    ],
+    "spread_methods": [
+      "Sporangia spread by wind",
+      "Water splash and rain",
+      "Infected tubers",
+      "Soil-borne inoculum"
+    ],
+    "environmental_factors": {
+      "temperature_range": "60-70°F (15-21°C)",
+      "humidity_required": ">90% relative humidity",
+      "susceptible_stages": "All growth stages",
+      "optimal_conditions": "Cool, wet weather"
+    },
+    "severity_levels": {
+      "mild": "Isolated water-soaked spots",
+      "moderate": "Expanding lesions with some plant death",
+      "severe": "Complete foliage destruction and tuber infection"
+    },
+    "reference_images": [
+      "database/reference_images/potato_late_blight_1.jpg",
+      "database/reference_images/potato_late_blight_2.jpg",
+      "database/reference_images/potato_late_blight_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "potato_early_blight",
+    "plant_name": "Potato",
+    "disease_name": "Early Blight",
+    "scientific_name": "Alternaria solani",
+    "description": "Fungal disease causing dark brown lesions with concentric rings on leaves and tubers.",
+    "symptoms": [
+      "Dark brown lesions with target-like pattern on lower leaves",
+      "Leaf yellowing and premature death",
+      "Dark, sunken lesions on tubers",
+      "Reduced yield and tuber quality"
+    ],
+    "causes": [
+      "Fungal pathogen Alternaria solani",
+      "Warm temperatures and high humidity",
+      "Plant stress and poor nutrition"
+    ],
+    "spread_methods": [
+      "Conidia spread by wind and rain",
+      "Infected seed tubers",
+      "Plant debris"
+    ],
+    "environmental_factors": {
+      "temperature_range": "75-85°F (24-29°C)",
+      "humidity_required": ">85% relative humidity",
+      "susceptible_stages": "Maturing plants",
+      "optimal_conditions": "Warm, humid weather"
+    },
+    "severity_levels": {
+      "mild": "Few lesions on lower leaves",
+      "moderate": "Moderate leaf damage with some defoliation",
+      "severe": "Extensive leaf death and tuber infection"
+    },
+    "reference_images": [
+      "database/reference_images/potato_early_blight_1.jpg",
+      "database/reference_images/potato_early_blight_2.jpg",
+      "database/reference_images/potato_early_blight_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "apple_scab",
+    "plant_name": "Apple",
+    "disease_name": "Apple Scab",
+    "scientific_name": "Venturia inaequalis",
+    "description": "Fungal disease causing olive-green to black lesions on leaves, fruit, and twigs, affecting fruit quality.",
+    "symptoms": [
+      "Olive-green to black velvety lesions on leaves",
+      "Scabby lesions on fruit surface",
+      "Cracked and distorted fruit",
+      "Twig dieback in severe cases",
+      "Reduced fruit quality and marketability"
+    ],
+    "causes": [
+      "Fungal pathogen Venturia inaequalis",
+      "Cool wet weather during bloom",
+      "High humidity",
+      "Dormant fungal spores in bark and fallen leaves"
+    ],
+    "spread_methods": [
+      "Airborne ascospores during rainy periods",
+      "Rain splash dispersing conidia",
+      "Infected nursery stock",
+      "Contaminated pruning tools"
+    ],
+    "environmental_factors": {
+      "temperature_range": "60-75°F (15-24°C)",
+      "humidity_required": ">95% relative humidity",
+      "susceptible_stages": "Bud break through fruit development",
+      "optimal_conditions": "Cool, wet spring weather"
+    },
+    "severity_levels": {
+      "mild": "Isolated spots on leaves and fruit",
+      "moderate": "Multiple lesions affecting leaf function",
+      "severe": "Extensive infection causing fruit deformities and yield loss"
+    },
+    "reference_images": [
+      "database/reference_images/apple_scab_1.jpg",
+      "database/reference_images/apple_scab_2.jpg",
+      "database/reference_images/apple_scab_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "apple_fire_blight",
+    "plant_name": "Apple",
+    "disease_name": "Fire Blight",
+    "scientific_name": "Erwinia amylovora",
+    "description": "Bacterial disease causing blossom blight, shoot dieback, and cankers that can kill entire trees.",
+    "symptoms": [
+      "Water-soaked blossom wilting and blackening",
+      "Shepherd's crook on new shoots",
+      "Sunken cankers with bacterial ooze",
+      "Shoot dieback and tree death",
+      "Burned appearance of affected areas"
+    ],
+    "causes": [
+      "Bacterium Erwinia amylovora",
+      "Warm humid weather during bloom",
+      "Insect vectors (bees, flies) spreading bacteria",
+      "Contaminated pruning tools"
+    ],
+    "spread_methods": [
+      "Insect vectors carrying bacteria",
+      "Rain splash dispersal",
+      "Contaminated tools and equipment",
+      "Infected nursery stock"
+    ],
+    "environmental_factors": {
+      "temperature_range": "65-85°F (18-29°C)",
+      "humidity_required": ">80% relative humidity",
+      "susceptible_stages": "Bloom through early summer",
+      "optimal_conditions": "Warm, humid weather during bloom"
+    },
+    "severity_levels": {
+      "mild": "Isolated blossom infection",
+      "moderate": "Limited shoot infection with some dieback",
+      "severe": "Extensive infection leading to tree death"
+    },
+    "reference_images": [
+      "database/reference_images/apple_fire_blight_1.jpg",
+      "database/reference_images/apple_fire_blight_2.jpg",
+      "database/reference_images/apple_fire_blight_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "grape_downy_mildew",
+    "plant_name": "Grape",
+    "disease_name": "Downy Mildew",
+    "scientific_name": "Plasmopara viticola",
+    "description": "Fungal disease causing white to grayish cottony growth on leaves and fruit, affecting photosynthesis and quality.",
+    "symptoms": [
+      "White to grayish cottony growth on lower leaf surfaces",
+      "Yellowing and curling of leaves",
+      "Reduced fruit quality and yield",
+      "In severe cases, defoliation and fruit rot"
+    ],
+    "causes": [
+      "Fungal pathogen Plasmopara viticola",
+      "Cool wet weather with high humidity",
+      "Poor air circulation in dense canopies",
+      "Infected plant debris from previous season"
+    ],
+    "spread_methods": [
+      "Airborne sporangia during humid conditions",
+      "Rain splash dispersing zoospores",
+      "Overwintering in infected plant material",
+      "Wind spread of spores"
+    ],
+    "environmental_factors": {
+      "temperature_range": "65-75°F (18-24°C)",
+      "humidity_required": ">95% relative humidity",
+      "susceptible_stages": "All growth stages, especially young leaves",
+      "optimal_conditions": "Cool, wet weather with poor air circulation"
+    },
+    "severity_levels": {
+      "mild": "Sparse mildew growth on isolated leaves",
+      "moderate": "Widespread mildew affecting multiple leaves",
+      "severe": "Complete leaf coverage with defoliation and fruit infection"
+    },
+    "reference_images": [
+      "database/reference_images/grape_downy_mildew_1.jpg",
+      "database/reference_images/grape_downy_mildew_2.jpg",
+      "database/reference_images/grape_downy_mildew_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "citrus_greening",
+    "plant_name": "Citrus",
+    "disease_name": "Citrus Greening",
+    "scientific_name": "Candidatus asiaticus",
+    "description": "Bacterial disease causing yellowing of leaves, green discoloration of fruit, and premature fruit drop.",
+    "symptoms": [
+      "Yellow mottling of leaves with distinct veins",
+      "Green spots and blotches on fruit rind",
+      "Bitter taste and misshapen fruit",
+      "Premature fruit drop and reduced yield"
+    ],
+    "causes": [
+      "Bacterium Candidatus asiaticus",
+      "Warm temperatures",
+      "Asian citrus psyllid vector",
+      "Infected nursery stock",
+      "Contaminated grafting tools"
+    ],
+    "spread_methods": [
+      "Psyllid vector transmission",
+      "Contaminated budwood and nursery stock",
+      "Tool contamination during pruning and grafting",
+      "Wind-blown infected tissue"
+    ],
+    "environmental_factors": {
+      "temperature_range": "70-90°F (21-32°C)",
+      "humidity_required": ">60% relative humidity",
+      "susceptible_stages": "Active growth periods",
+      "optimal_conditions": "Warm temperatures with psyllid presence"
+    },
+    "severity_levels": {
+      "mild": "Leaf yellowing with minimal fruit impact",
+      "moderate": "Extensive leaf yellowing with some fruit greening",
+      "severe": "Severe defoliation with widespread fruit infection"
+    },
+    "reference_images": [
+      "database/reference_images/citrus_greening_1.jpg",
+      "database/reference_images/citrus_greening_2.jpg",
+      "database/reference_images/citrus_greening_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "corn_gray_leaf_spot",
+    "plant_name": "Corn",
+    "disease_name": "Gray Leaf Spot",
+    "scientific_name": "Cercospora zeae-maydis",
+    "description": "Fungal disease causing rectangular gray lesions on leaves that can reduce photosynthesis and yield.",
+    "symptoms": [
+      "Gray to tan rectangular lesions on leaves",
+      "Lesions with distinct borders and yellow halos",
+      "Lesion coalescence in severe infections",
+      "Premature leaf death and reduced yield",
+      "Stalk breakage in severe cases"
+    ],
+    "causes": [
+      "Fungal pathogen Cercospora zeae-maydis",
+      "Warm humid weather (75-85°F)",
+      "High humidity and extended leaf wetness",
+      "Infected crop debris",
+      "Continuous corn cultivation"
+    ],
+    "spread_methods": [
+      "Wind and rain dispersing conidia",
+      "Infected seed and plant debris",
+      "Soil-borne survival structures",
+      "Equipment contamination"
+    ],
+    "environmental_factors": {
+      "temperature_range": "75-85°F (24-29°C)",
+      "humidity_required": ">90% relative humidity",
+      "susceptible_stages": "All vegetative stages",
+      "optimal_conditions": "Warm, humid weather during active growth"
+    },
+    "severity_levels": {
+      "mild": "Few scattered lesions on lower leaves",
+      "moderate": "Numerous lesions causing moderate leaf damage",
+      "severe": "Extensive lesions leading to significant yield loss"
+    },
+    "reference_images": [
+      "database/reference_images/corn_gray_leaf_spot_1.jpg",
+      "database/reference_images/corn_gray_leaf_spot_2.jpg",
+      "database/reference_images/corn_gray_leaf_spot_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "wheat_powdery_mildew",
+    "plant_name": "Wheat",
+    "disease_name": "Powdery Mildew",
+    "scientific_name": "Blumeria graminis",
+    "description": "Fungal disease causing white powdery growth on leaves, stems, and heads, reducing photosynthesis and grain quality.",
+    "symptoms": [
+      "White to gray powdery patches on leaves and stems",
+      "Yellowing and stunting of affected tissue",
+      "Reduced grain quality and yield",
+      "Severe infection leads to head damage and grain loss"
+    ],
+    "causes": [
+      "Fungal pathogen Blumeria graminis",
+      "Cool temperatures (60-70°F)",
+      "High humidity and moderate temperatures",
+      "Dry conditions favor spore production and spread",
+      "Infected seed or volunteer plants"
+    ],
+    "spread_methods": [
+      "Wind-borne conidia and ascospores",
+      "Rain splash dispersal",
+      "Infected seed and plant debris",
+      "Long-distance wind spread of spores"
+    ],
+    "environmental_factors": {
+      "temperature_range": "60-75°F (15-24°C)",
+      "humidity_required": ">85% relative humidity",
+      "susceptible_stages": "All growth stages, especially heading",
+      "optimal_conditions": "Cool temperatures with high humidity and cloudy conditions"
+    },
+    "severity_levels": {
+      "mild": "Scattered powdery growth on lower leaves",
+      "moderate": "Widespread powdery mildew on multiple leaves",
+      "severe": "Complete leaf coverage with stem and head infection"
+    },
+    "reference_images": [
+      "database/reference_images/wheat_powdery_mildew_1.jpg",
+      "database/reference_images/wheat_powdery_mildew_2.jpg",
+      "database/reference_images/wheat_powdery_mildew_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "soybean_sudden_death_syndrome",
+    "plant_name": "Soybean",
+    "disease_name": "Sudden Death Syndrome",
+    "scientific_name": "Fusarium virguliforme",
+    "description": "Devastating fungal disease causing rapid wilting, leaf scorch, and plant death without warning signs.",
+    "symptoms": [
+      "Rapid wilting and death of infected plants",
+      "Interveinal chlorosis and necrosis",
+      "Brown to black discoloration of lower stem and root cortex",
+      "White cottony fungal growth on stem in humid conditions",
+      "Premature plant death before flowering"
+    ],
+    "causes": [
+      "Fungal pathogen Fusarium virguliforme",
+      "Warm soil temperatures (80-90°F)",
+      "Stress conditions (drought, nutrient imbalances)",
+      "Infected seed and soil inoculum",
+      "Continuous soybean cultivation"
+    ],
+    "spread_methods": [
+      "Infected seed and plant debris",
+      "Soil-borne survival structures (macroconidia, chlamydospores)",
+      "Equipment contamination during harvest",
+      "Wind dispersal of fungal spores"
+    ],
+    "environmental_factors": {
+      "temperature_range": "80-90°F (27-32°C)",
+      "humidity_required": ">70% relative humidity",
+      "susceptible_stages": "All vegetative stages, especially V2-V4 stage",
+      "optimal_conditions": "Warm, moist soil conditions with plant stress"
+    },
+    "severity_levels": {
+      "mild": "Isolated plants with minor symptoms",
+      "moderate": "Patches of affected plants with moderate symptoms",
+      "severe": "Widespread death affecting >25% of field"
+    },
+    "reference_images": [
+      "database/reference_images/soybean_sudden_death_1.jpg",
+      "database/reference_images/soybean_sudden_death_2.jpg",
+      "database/reference_images/soybean_sudden_death_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "cotton_boll_rot",
+    "plant_name": "Cotton",
+    "disease_name": "Boll Rot",
+    "scientific_name": "Various fungal and bacterial pathogens",
+    "description": "Complex disease causing rotting of cotton bolls during maturation, reducing lint quality and yield.",
+    "symptoms": [
+      "Water-soaked lesions on developing bolls",
+      "External rot and fungal growth on bolls",
+      "Internal rot with discolored lint",
+      "Premature boll opening and shedding",
+      "Reduced lint quality and weight"
+    ],
+    "causes": [
+      "Multiple fungal and bacterial pathogens",
+      "Warm humid conditions (85-95°F)",
+      "Excess nitrogen and late application of irrigation",
+      "Boll injury from insects or weather",
+      "Poor drainage in fields"
+    ],
+    "spread_methods": [
+      "Infected seed and plant debris",
+      "Airborne spores during humid periods",
+      "Insect vectors carrying pathogens",
+      "Water splash and contaminated irrigation water",
+      "Contaminated harvesting equipment"
+    ],
+    "environmental_factors": {
+      "temperature_range": "85-95°F (29-35°C)",
+      "humidity_required": ">90% relative humidity",
+      "susceptible_stages": "Boll development (30-60 days after flowering)",
+      "optimal_conditions": "Warm, humid weather during boll development"
+    },
+    "severity_levels": {
+      "mild": "Isolated bolls with minor rotting",
+      "moderate": "Multiple affected bolls with significant yield loss",
+      "severe": "Widespread boll infection with >50% boll loss"
+    },
+    "reference_images": [
+      "database/reference_images/cotton_boll_rot_1.jpg",
+      "database/reference_images/cotton_boll_rot_2.jpg",
+      "database/reference_images/cotton_boll_rot_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "strawberry_powdery_mildew",
+    "plant_name": "Strawberry",
+    "disease_name": "Powdery Mildew",
+    "scientific_name": "Podosphaera aphanis",
+    "description": "Fungal disease causing white powdery growth on leaves, flowers, and fruit, affecting photosynthesis and market quality.",
+    "symptoms": [
+      "White powdery patches on upper leaf surfaces",
+      "Leaf curling and stunting",
+      "White fungal growth on flowers and fruit",
+      "Reduced fruit quality and yield",
+      "Severe infections lead to fruit deformities"
+    ],
+    "causes": [
+      "Fungal pathogen Podosphaera aphanis",
+      "Moderate temperatures (60-75°F)",
+      "High humidity and poor air circulation",
+      "Infected nursery stock",
+      "Overwintering in plant debris"
+    ],
+    "spread_methods": [
+      "Wind-borne conidia and ascospores",
+      "Rain splash dispersal",
+      "Infected planting material",
+      "Contaminated equipment and tools"
+    ],
+    "environmental_factors": {
+      "temperature_range": "60-75°F (15-24°C)",
+      "humidity_required": ">90% relative humidity",
+      "susceptible_stages": "All growth stages, especially flowering and fruiting",
+      "optimal_conditions": "Moderate temperatures with high humidity and cloudy conditions"
+    },
+    "severity_levels": {
+      "mild": "Scattered powdery growth on isolated leaves",
+      "moderate": "Widespread mildew affecting multiple leaves",
+      "severe": "Complete leaf coverage with severe fruit infection"
+    },
+    "reference_images": [
+      "database/reference_images/strawberry_powdery_mildew_1.jpg",
+      "database/reference_images/strawberry_powdery_mildew_2.jpg",
+      "database/reference_images/strawberry_powdery_mildew_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "lettuce_downy_mildew",
+    "plant_name": "Lettuce",
+    "disease_name": "Downy Mildew",
+    "scientific_name": "Bremia lactucae",
+    "description": "Fungal disease causing white downy growth on leaves, reducing photosynthesis and market quality.",
+    "symptoms": [
+      "White downy growth on lower leaf surfaces",
+      "Yellowing and leaf curling",
+      "Stunted plant growth",
+      "Reduced head quality and yield"
+    ],
+    "causes": [
+      "Fungal pathogen Bremia lactucae",
+      "Cool, wet weather (60-70°F)",
+      "High humidity and poor air circulation",
+      "Infected seed and plant debris",
+      "Contaminated irrigation water"
+    ],
+    "spread_methods": [
+      "Spores dispersed by wind and rain",
+      "Infected seed and transplants",
+      "Soil-borne survival structures",
+      "Water splash and equipment contamination"
+    ],
+    "environmental_factors": {
+      "temperature_range": "60-70°F (15-21°C)",
+      "humidity_required": ">95% relative humidity",
+      "susceptible_stages": "All growth stages, especially heading",
+      "optimal_conditions": "Cool, wet weather with dense canopy"
+    },
+    "severity_levels": {
+      "mild": "Scattered mildew on lower leaves",
+      "moderate": "Widespread mildew covering multiple leaves",
+      "severe": "Complete leaf coverage with severe head quality reduction"
+    },
+    "reference_images": [
+      "database/reference_images/lettuce_downy_mildew_1.jpg",
+      "database/reference_images/lettuce_downy_mildew_2.jpg",
+      "database/reference_images/lettuce_downy_mildew_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "broccoli_black_rot",
+    "plant_name": "Broccoli",
+    "disease_name": "Black Rot",
+    "scientific_name": "Various pathogens (e.g., Pseudomonas, Botrytis)",
+    "description": "Complex disease causing head rot with watery decay and foul odor, rendering crops unmarketable.",
+    "symptoms": [
+      "Water-soaked lesions on head and curd",
+      "Slimy, foul-smelling decay of affected tissue",
+      "Gray to black discoloration of affected areas",
+      "Premature rotting before harvest maturity",
+      "Complete head loss in severe cases"
+    ],
+    "causes": [
+      "Bacterial and fungal pathogens",
+      "Warm, humid conditions (75-85°F)",
+      "Poor air circulation and high humidity",
+      "Physical damage during cultivation and harvest",
+      "Contaminated irrigation and equipment"
+    ],
+    "spread_methods": [
+      "Infected seed and transplants",
+      "Soil-borne pathogen survival",
+      "Insect vectors carrying bacteria",
+      "Contaminated equipment and irrigation water"
+    ],
+    "environmental_factors": {
+      "temperature_range": "75-85°F (24-29°C)",
+      "humidity_required": ">90% relative humidity",
+      "susceptible_stages": "Head development and pre-harvest",
+      "optimal_conditions": "Warm, humid weather before harvest"
+    },
+    "severity_levels": {
+      "mild": "Isolated rot spots on few heads",
+      "moderate": "Multiple heads affected with partial rot",
+      "severe": "Widespread infection with >50% head loss"
+    },
+    "reference_images": [
+      "database/reference_images/broccoli_black_rot_1.jpg",
+      "database/reference_images/broccoli_black_rot_2.jpg",
+      "database/reference_images/broccoli_black_rot_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "rice_bacterial_leaf_blight",
+    "plant_name": "Rice",
+    "disease_name": "Bacterial Leaf Blight",
+    "scientific_name": "Xanthomonas oryzae",
+    "description": "Bacterial disease causing water-soaked lesions that become translucent and yellow, reducing photosynthesis and yield.",
+    "symptoms": [
+      "Water-soaked, angular lesions on leaves",
+      "Lesions turning yellow, brown, and translucent",
+      "Leaf death in severe infections",
+      "Reduced tillering and grain production"
+    ],
+    "causes": [
+      "Bacterium Xanthomonas oryzae",
+      "Warm, wet weather (75-90°F)",
+      "High humidity and leaf wetness",
+      "Infected seed and plant debris",
+      "Rain splash dispersal during monsoon rains"
+    ],
+    "spread_methods": [
+      "Rain splash and wind dispersal",
+      "Infected seed and transplants",
+      "Soil-borne survival in weeds and crop residue",
+      "Contaminated irrigation water and equipment"
+    ],
+    "environmental_factors": {
+      "temperature_range": "75-90°F (24-32°C)",
+      "humidity_required": ">85% relative humidity",
+      "susceptible_stages": "All vegetative stages, especially tillering",
+      "optimal_conditions": "Warm, wet monsoon season"
+    },
+    "severity_levels": {
+      "mild": "Scattered lesions on lower leaves",
+      "moderate": "Extensive lesions affecting 10-30% of foliage",
+      "severe": "Widespread infection with >50% leaf damage and yield loss"
+    },
+    "reference_images": [
+      "database/reference_images/rice_bacterial_leaf_blight_1.jpg",
+      "database/reference_images/rice_bacterial_leaf_blight_2.jpg",
+      "database/reference_images/rice_bacterial_leaf_blight_3.jpg"
+    ]
+  },
+  {
+    "disease_id": "carrot_alternaria_leaf_blight",
+    "plant_name": "Carrot",
+    "disease_name": "Alternaria Leaf Blight",
+    "scientific_name": "Alternaria dauci",
+    "description": "Fungal disease causing dark brown to black lesions with concentric rings on carrot leaves and petioles.",
+    "symptoms": [
+      "Dark brown to black lesions with concentric rings",
+      "Leaf yellowing and death from petioles inward",
+      "Reduced photosynthesis and plant growth",
+      " lesions on carrot roots and crowns in severe cases"
+    ],
+    "causes": [
+      "Fungal pathogen Alternaria dauci",
+      "Warm temperatures and high humidity",
+      "Infected seed and plant debris",
+      "Poor soil drainage and nutrient imbalances"
+    ],
+    "spread_methods": [
+      "Conidia spread by wind and rain",
+      "Soil-borne survival structures",
+      "Infected seed and equipment contamination",
+      "Water splash dispersal"
+    ],
+    "environmental_factors": {
+      "temperature_range": "70-85°F (21-29°C)",
+      "humidity_required": ">90% relative humidity",
+      "susceptible_stages": "All growth stages, especially mature foliage",
+      "optimal_conditions": "Warm, humid weather with poor air circulation"
+    },
+    "severity_levels": {
+      "mild": "Few lesions on outer leaves",
+      "moderate": "Multiple lesions with some leaf loss",
+      "severe": "Extensive infection causing significant yield loss"
+    },
+    "reference_images": [
+      "database/reference_images/carrot_alternaria_1.jpg",
+      "database/reference_images/carrot_alternaria_2.jpg",
+      "database/reference_images/carrot_alternaria_3.jpg"
+    ]
+  }
+]
