@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
     
     global disease_service, image_processor, ai_service, settings
 
-    # Startup
+    
     logger.info("Starting Plant Leaf Disease Detector API...")
 
     try:
