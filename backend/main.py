@@ -86,7 +86,6 @@ async def lifespan(app: FastAPI):
     logger.info("Shutdown complete")
 
 
-# Create FastAPI application
 app = FastAPI(
     title="Plant Leaf Disease Detector",
     description="AI-powered plant disease detection and treatment recommendation API",
