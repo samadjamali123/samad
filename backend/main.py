@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager"""
+    
     global disease_service, image_processor, ai_service, settings
 
     # Startup
