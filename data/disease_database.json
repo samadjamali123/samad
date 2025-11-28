@@ -1,0 +1,628 @@
+{
+  "diseases": [
+    {
+      "id": 1,
+      "name": "Leaf Rust",
+      "scientific_name": "Puccinia triticina",
+      "category": "Fungal",
+      "severity": "Moderate",
+      "contagious": true,
+      "affected_plants": ["Wheat", "Barley", "Rye", "Oats", "Grasses"],
+      "symptoms": [
+        "Orange-red pustules on leaf surfaces",
+        "Yellowing of surrounding tissue",
+        "Premature leaf death and shedding",
+        "Reduced photosynthesis and yield",
+        "Dark brown to black pustules in advanced stages"
+      ],
+      "causes": [
+        "Fungal pathogen Puccinia triticina",
+        "High humidity and moderate temperatures (15-25°C)",
+        "Overcrowded planting conditions",
+        "Excessive nitrogen fertilization",
+        "Poor air circulation between plants"
+      ],
+      "treatment": [
+        "Apply fungicide containing azoxystrobin or propiconazole",
+        "Remove and destroy infected leaves to reduce spread",
+        "Improve air circulation between plants through proper spacing",
+        "Rotate crops annually to break disease cycle",
+        "Use resistant varieties when available",
+        "Apply sulfur-based fungicides for organic options"
+      ],
+      "prevention": [
+        "Plant resistant wheat varieties",
+        "Maintain proper spacing between plants for good airflow",
+        "Avoid overhead irrigation to keep foliage dry",
+        "Monitor crops regularly for early detection",
+        "Remove volunteer wheat plants that can harbor the pathogen",
+        "Apply preventive fungicide sprays during high-risk periods"
+      ],
+      "image_urls": [
+        "/static/diseases/leaf_rust_early.jpg",
+        "/static/diseases/leaf_rust_advanced.jpg"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Powdery Mildew",
+      "scientific_name": "Erysiphe spp.",
+      "category": "Fungal",
+      "severity": "Moderate",
+      "contagious": true,
+      "affected_plants": ["Roses", "Cucumbers", "Squash", "Melons", "Grapes", "Lilacs", "Apples"],
+      "symptoms": [
+        "White, powdery coating on upper leaf surfaces",
+        "Yellowing and curling of affected leaves",
+        "Stunted growth of new shoots and leaves",
+        "Reduced flowering and fruit production",
+        "Brown patches as infection progresses"
+      ],
+      "causes": [
+        "Fungal pathogens from Erysiphaceae family",
+        "High humidity combined with moderate temperatures",
+        "Poor air circulation and crowded conditions",
+        "Shade and moist leaf surfaces",
+        "Temperature fluctuations between day and night"
+      ],
+      "treatment": [
+        "Apply fungicides containing neem oil for organic treatment",
+        "Use sulfur-based fungicides for conventional treatment",
+        "Remove heavily infected plant parts",
+        "Apply potassium bicarbonate spray",
+        "Increase air circulation through pruning",
+        "Use fungicides with myclobutanil or trifloxystrobin"
+      ],
+      "prevention": [
+        "Provide adequate spacing between plants",
+        "Ensure good air circulation and sunlight exposure",
+        "Water plants at soil level, avoid wetting foliage",
+        "Choose resistant plant varieties",
+        "Apply preventive fungicide sprays during humid periods",
+        "Maintain optimal soil nutrients to strengthen plant immunity"
+      ],
+      "image_urls": [
+        "/static/diseases/powdery_mildew_leaves.jpg",
+        "/static/diseases/powdery_mildew_stems.jpg"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Bacterial Leaf Spot",
+      "scientific_name": "Xanthomonas spp.",
+      "category": "Bacterial",
+      "severity": "High",
+      "contagious": true,
+      "affected_plants": ["Tomatoes", "Peppers", "Lettuce", "Cole crops", "Beans"],
+      "symptoms": [
+        "Small, water-soaked spots on leaves",
+        "Spots turn yellow to brown with reddish borders",
+        "Spots may coalesce forming larger lesions",
+        "Leaf yellowing and premature defoliation",
+        "Reduced photosynthetic capacity"
+      ],
+      "causes": [
+        "Xanthomonas bacterial pathogens",
+        "Warm, wet weather conditions",
+        "Overhead irrigation splashing bacteria",
+        "Contaminated seeds and transplants",
+        "Poor sanitation in garden tools",
+        "Infected plant debris in soil"
+      ],
+      "treatment": [
+        "Apply copper-based bactericides",
+        "Use streptomycin-based antibiotics for severe infections",
+        "Remove and destroy infected plant material",
+        "Apply beneficial bacterial antagonists",
+        "Improve drainage and reduce humidity",
+        "Use bacteriophage sprays where available"
+      ],
+      "prevention": [
+        "Use disease-free seeds and transplants",
+        "Practice crop rotation with non-host plants",
+        "Avoid overhead irrigation when possible",
+        "Disinfect garden tools regularly",
+        "Remove plant debris between seasons",
+        "Maintain proper plant spacing for air circulation",
+        "Apply preventive copper sprays during high-risk periods"
+      ],
+      "image_urls": [
+        "/static/diseases/bacterial_spot_tomato.jpg",
+        "/static/diseases/bacterial_spot_pepper.jpg"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Septoria Leaf Spot",
+      "scientific_name": "Septoria lycopersici",
+      "category": "Fungal",
+      "severity": "Moderate",
+      "contagious": true,
+      "affected_plants": ["Tomatoes", "Celery", "Wheat", "Cereals"],
+      "symptoms": [
+        "Small circular spots with dark margins",
+        "Light-colored centers with tiny black dots (pycnidia)",
+        "Lower leaves affected first, progressing upward",
+        "Extensive yellowing and leaf drop",
+        "Reduced fruit quality and yield"
+      ],
+      "causes": [
+        "Fungal pathogen Septoria lycopersici",
+        "High humidity and warm temperatures (20-25°C)",
+        "Rain and irrigation splash dispersal",
+        "Infected plant debris in soil",
+        "Poor air circulation in plant canopy"
+      ],
+      "treatment": [
+        "Apply fungicides containing chlorothalonil",
+        "Use mancozeb or copper-based fungicides",
+        "Remove lower infected leaves immediately",
+        "Improve air circulation through pruning",
+        "Apply preventive sprays during wet periods",
+        "Use resistant tomato varieties"
+      ],
+      "prevention": [
+        "Rotate tomatoes with non-host crops for 3-4 years",
+        "Space plants properly for good airflow",
+        "Use drip irrigation instead of overhead watering",
+        "Remove and destroy infected plant debris",
+        "Apply mulch to reduce soil splash",
+        "Monitor plants regularly for early symptoms"
+      ],
+      "image_urls": [
+        "/static/diseases/septoria_leaf_spot_early.jpg",
+        "/static/diseases/septoria_leaf_spot_late.jpg"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Early Blight",
+      "scientific_name": "Alternaria solani",
+      "category": "Fungal",
+      "severity": "High",
+      "contagious": true,
+      "affected_plants": ["Tomatoes", "Potatoes", "Eggplants", "Peppers"],
+      "symptoms": [
+        "Dark brown to black concentric rings on lower leaves",
+        "Target-like lesions with yellow halos",
+        "Premature defoliation from bottom upward",
+        "Fruit lesions near the stem end",
+        "Stem cankers in severe cases"
+      ],
+      "causes": [
+        "Fungal pathogen Alternaria solani",
+        "Warm, humid weather conditions",
+        "Stressed or weakened plants",
+        "Infected seed and plant debris",
+        "Poor soil drainage and nutrition",
+        "Excessive nitrogen fertilizer"
+      ],
+      "treatment": [
+        "Apply fungicides with chlorothalonil or mancozeb",
+        "Use copper-based organic fungicides",
+        "Remove infected leaves and improve air circulation",
+        "Apply calcium nitrate to strengthen cell walls",
+        "Use biological control agents like Bacillus subtilis",
+        "Implement proper irrigation management"
+      ],
+      "prevention": [
+        "Use disease-resistant tomato varieties",
+        "Practice crop rotation with non-solanaceous crops",
+        "Provide adequate spacing between plants",
+        "Use drip irrigation and avoid wetting leaves",
+        "Apply preventive fungicide sprays early in season",
+        "Maintain optimal soil fertility and pH levels",
+        "Remove volunteer plants and infected debris"
+      ],
+      "image_urls": [
+        "/static/diseases/early_blight_leaves.jpg",
+        "/static/diseases/early_blight_fruit.jpg"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Late Blight",
+      "scientific_name": "Phytophthora infestans",
+      "category": "Fungal",
+      "severity": "Critical",
+      "contagious": true,
+      "affected_plants": ["Tomatoes", "Potatoes"],
+      "symptoms": [
+        "Large, irregular water-soaked spots on leaves",
+        "White fungal growth on underside of lesions during humid conditions",
+        "Rapid leaf death and plant collapse",
+        "Firm, dark brown lesions on potato tubers",
+        "Complete crop loss within 7-10 days in favorable conditions"
+      ],
+      "causes": [
+        "Oomycete pathogen Phytophthora infestans",
+        "Cool, wet weather conditions (15-20°C with high humidity)",
+        "Rain and dew providing moisture for infection",
+        "Infected seed potatoes and plant debris",
+        "Wind-dispersed spores",
+        "Poor drainage and waterlogged soils"
+      ],
+      "treatment": [
+        "Apply protective fungicides containing metalaxyl or copper",
+        "Use systemic fungicides with mefenoxam",
+        "Destroy infected plants immediately to prevent spread",
+        "Harvest potatoes early in infected fields",
+        "Apply foliar phosphorus compounds for resistance",
+        "Use biological controls where available"
+      ],
+      "prevention": [
+        "Plant certified disease-free seed potatoes",
+        "Use resistant varieties when available",
+        "Provide excellent drainage and avoid waterlogging",
+        "Avoid planting in low-lying areas",
+        "Apply preventive fungicides before rainy periods",
+        "Practice proper field sanitation",
+        "Monitor weather forecasts and risk predictions"
+      ],
+      "image_urls": [
+        "/static/diseases/late_blight_leaves.jpg",
+        "/static/diseases/late_blight_tubers.jpg"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Root Rot",
+      "scientific_name": "Rhizoctonia solani",
+      "category": "Fungal",
+      "severity": "Critical",
+      "contagious": true,
+      "affected_plants": ["Most vegetables", "Flowers", "Shrubs", "Trees"],
+      "symptoms": [
+        "Yellowing and wilting of lower leaves",
+        "Stunted growth and poor vigor",
+        "Brown, water-soaked root tissue",
+        "Rotted base of stem near soil line",
+        "Plant death in severe cases"
+      ],
+      "causes": [
+        "Various soil-borne fungal pathogens",
+        "Overwatering and poor soil drainage",
+        "Compacted soil with poor aeration",
+        "Soil temperatures too cold for root growth",
+        "Mechanical root damage during planting",
+        "High soil salt levels"
+      ],
+      "treatment": [
+        "Apply soil drench fungicides with thiophanate-methyl",
+        "Use biological controls like Trichoderma species",
+        "Improve soil drainage and aeration",
+        "Reduce irrigation frequency",
+        "Apply gypsum to improve soil structure",
+        "Remove and destroy severely infected plants"
+      ],
+      "prevention": [
+        "Use well-draining soil and containers",
+        "Avoid overwatering and check soil moisture before watering",
+        "Provide adequate soil aeration through organic matter",
+        "Use sterilized potting mix for containers",
+        "Practice crop rotation with root-resistant crops",
+        "Maintain proper soil temperature and pH levels",
+        "Inspect plants regularly for early symptoms"
+      ],
+      "image_urls": [
+        "/static/diseases/root_rot_early.jpg",
+        "/static/diseases/root_rot_advanced.jpg"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Tobacco Mosaic Virus",
+      "scientific_name": "Tobacco mosaic virus (TMV)",
+      "category": "Viral",
+      "severity": "High",
+      "contagious": true,
+      "affected_plants": ["Tomatoes", "Tobacco", "Peppers", "Eggplants"],
+      "symptoms": [
+        "Light green and dark green mosaic pattern on leaves",
+        "Leaf curling and malformation",
+        "Reduced plant growth and yield",
+        "Yellow mottling between veins",
+        "Fruit abnormalities and reduced quality"
+      ],
+      "causes": [
+        "Tobacco mosaic virus infection",
+        "Mechanical transmission through handling",
+        "Contaminated tools and equipment",
+        "Infected seeds or plant material",
+        "Contact with infected tobacco products",
+        "Aphid transmission in some cases"
+      ],
+      "treatment": [
+        "No effective chemical treatment available",
+        "Remove and destroy infected plants immediately",
+        "Use resistant varieties for future plantings",
+        "Apply reflective mulch to deter aphid vectors",
+        "Use milk sprays as preventive measure",
+        "Implement strict sanitation practices"
+      ],
+      "prevention": [
+        "Use certified virus-free seeds and transplants",
+        "Disinfect tools and hands between plants",
+        "Remove and destroy infected plants immediately",
+        "Control aphid populations that can transmit virus",
+        "Avoid tobacco use when handling tomato plants",
+        "Use resistant cultivars when available",
+        "Maintain good plant health and nutrition"
+      ],
+      "image_urls": [
+        "/static/diseases/tobacco_mosaic_virus.jpg",
+        "/static/diseases/tobacco_mosaic_fruit.jpg"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Aphid Damage",
+      "scientific_name": "Aphidoidea superfamily",
+      "category": "Insect",
+      "severity": "Moderate",
+      "contagious": true,
+      "affected_plants": ["Most vegetables", "Flowers", "Trees", "Fruits"],
+      "symptoms": [
+        "Curled and distorted new growth",
+        "Sticky honeydew on leaves and stems",
+        "Black sooty mold growing on honeydew",
+        "Yellowing and weakening of plants",
+        "Visible colonies of small insects on undersides of leaves"
+      ],
+      "causes": [
+        "Aphid feeding on plant sap",
+        "Rapid reproduction in warm weather",
+        "Ants protecting aphid colonies",
+        "Migrating aphids from nearby plants",
+        "Lack of natural predator populations",
+        "Over-fertilized plants producing tender growth"
+      ],
+      "treatment": [
+        "Apply insecticidal soap or neem oil",
+        "Use systemic insecticides for severe infestations",
+        "Introduce beneficial insects like ladybugs",
+        "Apply horticultural oils to suffocate aphids",
+        "Use yellow sticky traps for monitoring and control",
+        "Prune heavily infested plant parts"
+      ],
+      "prevention": [
+        "Monitor plants regularly for early aphid detection",
+        "Encourage natural predators like ladybugs and lacewings",
+        "Use reflective mulch to deter aphids",
+        "Avoid over-fertilizing with nitrogen",
+        "Provide proper plant spacing for good air circulation",
+        "Remove weeds that can harbor aphids",
+        "Use companion plants that repel aphids"
+      ],
+      "image_urls": [
+        "/static/diseases/aphid_colony.jpg",
+        "/static/diseases/aphid_damage.jpg"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Nitrogen Deficiency",
+      "scientific_name": "N/A",
+      "category": "Nutritional",
+      "severity": "Low",
+      "contagious": false,
+      "affected_plants": ["All plants"],
+      "symptoms": [
+        "Uniform yellowing of older leaves first",
+        "Stunted growth and reduced vigor",
+        "Pale green to yellow foliage",
+        "Reduced flowering and fruit production",
+        "Smaller than normal leaves"
+      ],
+      "causes": [
+        "Insufficient nitrogen in soil",
+        "Excessive rainfall leaching nitrogen",
+        "High carbon mulch material tying up nitrogen",
+        "Poor soil organic matter content",
+        "Overcrowding reducing available nitrogen",
+        "Inadequate fertilization program"
+      ],
+      "treatment": [
+        "Apply nitrogen-rich fertilizer immediately",
+        "Use compost or well-rotted manure",
+        "Apply foliar nitrogen spray for quick correction",
+        "Use slow-release nitrogen fertilizers for sustained feeding",
+        "Incorporate cover crops into soil before planting",
+        "Apply urea or ammonium nitrate according to soil test"
+      ],
+      "prevention": [
+        "Conduct regular soil tests",
+        "Apply balanced fertilizers based on crop needs",
+        "Use organic matter to maintain soil nitrogen",
+        "Practice crop rotation with legumes",
+        "Monitor plants for early deficiency symptoms",
+        "Maintain proper soil pH for nitrogen availability",
+        "Use cover crops to add organic nitrogen"
+      ],
+      "image_urls": [
+        "/static/diseases/nitrogen_deficiency.jpg"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Iron Deficiency",
+      "scientific_name": "Iron chlorosis",
+      "category": "Nutritional",
+      "severity": "Low",
+      "contagious": false,
+      "affected_plants": ["Most plants", especially acid-loving plants],
+      "symptoms": [
+        "Yellowing between leaf veins while veins remain green",
+        "Interveinal chlorosis on newer growth",
+        "Severe cases show complete leaf whitening",
+        "Reduced photosynthetic capacity",
+        "Poor growth and development"
+      ],
+      "causes": [
+        "High soil pH locking up iron",
+        "Poorly drained compacted soils",
+        "Excessive phosphorus in soil",
+        "Calcareous or limestone soils",
+        "Over-watering reducing iron uptake",
+        "Damaged root systems"
+      ],
+      "treatment": [
+        "Apply chelated iron fertilizer",
+        "Use iron sulfate for soil application",
+        "Apply foliar iron sprays for quick response",
+        "Lower soil pH with sulfur or elemental sulfur",
+        "Improve soil drainage and aeration",
+        "Use acidifying fertilizers for long-term correction"
+      ],
+      "prevention": [
+        "Maintain optimal soil pH (6.0-6.5 for most plants)",
+        "Choose iron-efficient plant varieties for alkaline soils",
+        "Add organic matter to improve iron availability",
+        "Avoid over-liming soils",
+        "Use mulch to maintain consistent soil moisture",
+        "Monitor soil pH regularly"
+      ],
+      "image_urls": [
+        "/static/diseases/iron_deficiency.jpg"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Fungal Infection - General",
+      "scientific_name": "Various fungi",
+      "category": "Fungal",
+      "severity": "Moderate",
+      "contagious": true,
+      "affected_plants": ["All plants"],
+      "symptoms": [
+        "Spots or lesions on leaves, stems, or fruits",
+        "Powdery or fuzzy growth on plant surfaces",
+        "Discoloration and decay of plant tissues",
+        "Wilting or collapse of infected parts",
+        "Reduced plant vigor and yield"
+      ],
+      "causes": [
+        "Various pathogenic fungi",
+        "High humidity and poor air circulation",
+        "Wet foliage from rain or irrigation",
+        "Stressed or weakened plants",
+        "Infected seeds or plant material",
+        "Poor sanitation practices"
+      ],
+      "treatment": [
+        "Apply appropriate fungicides based on specific fungus",
+        "Remove and destroy infected plant parts",
+        "Improve air circulation and reduce humidity",
+        "Use biological controls where available",
+        "Apply preventive fungicides during high-risk periods",
+        "Implement proper sanitation practices"
+      ],
+      "prevention": [
+        "Provide adequate spacing between plants",
+        "Ensure good air circulation and sunlight exposure",
+        "Use drip irrigation to keep foliage dry",
+        "Practice crop rotation",
+        "Use disease-resistant varieties",
+        "Maintain good garden sanitation"
+      ],
+      "image_urls": [
+        "/static/diseases/general_fungal.jpg"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Healthy Leaf",
+      "scientific_name": "N/A",
+      "category": "Healthy",
+      "severity": "None",
+      "contagious": false,
+      "affected_plants": ["All plants"],
+      "symptoms": [
+        "Uniform green coloration without discoloration",
+        "Normal leaf shape and size",
+        "No spots, lesions, or abnormal growth",
+        "Healthy turgor and firm texture",
+        "Normal vein pattern and structure"
+      ],
+      "causes": [
+        "Proper care and maintenance",
+        "Adequate sunlight and water",
+        "Balanced nutrition",
+        "Good soil conditions and drainage",
+        "Appropriate environmental conditions",
+        "Absence of pathogens and pests"
+      ],
+      "treatment": [
+        "Continue current care practices",
+        "Monitor regularly for any changes",
+        "Maintain proper watering schedule",
+        "Provide balanced fertilization as needed",
+        "Ensure adequate sunlight and air circulation",
+        "Document any changes for future reference"
+      ],
+      "prevention": [
+        "Maintain consistent and proper care routines",
+        "Monitor plants regularly for early problem detection",
+        "Provide optimal growing conditions",
+        "Use disease-free planting material",
+        "Practice good sanitation in garden tools",
+        "Maintain proper soil health and fertility"
+      ],
+      "image_urls": [
+        "/static/diseases/healthy_leaf.jpg"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Environmental Stress",
+      "scientific_name": "N/A",
+      "category": "Environmental",
+      "severity": "Low",
+      "contagious": false,
+      "affected_plants": ["All plants"],
+      "symptoms": [
+        "Leaf scorching or browning at edges",
+        "Wilting despite adequate moisture",
+        "Yellowing or premature leaf drop",
+        "Stunted growth or reduced vigor",
+        "Leaf cupping or distortion"
+      ],
+      "causes": [
+        "Extreme temperature fluctuations",
+        "Inadequate or excessive light exposure",
+        "Improper watering practices",
+        "Poor soil conditions",
+        "Mechanical damage from wind or handling",
+        "Chemical exposure or pollution"
+      ],
+      "treatment": [
+        "Identify and correct environmental stressors",
+        "Adjust watering and lighting as needed",
+        "Provide wind protection or shading",
+        "Improve soil conditions and drainage",
+        "Apply anti-transpirant sprays if needed",
+        "Remove severely damaged plant parts"
+      ],
+      "prevention": [
+        "Choose plants suited to local climate",
+        "Provide appropriate protection from extreme weather",
+        "Maintain consistent watering and fertilization",
+        "Improve soil structure and organic matter",
+        "Use windbreaks or shade cloth when necessary",
+        "Monitor environmental conditions regularly"
+      ],
+      "image_urls": [
+        "/static/diseases/environmental_stress.jpg"
+      ]
+    }
+  ],
+  "metadata": {
+    "total_diseases": 15,
+    "categories": ["Fungal", "Bacterial", "Viral", "Nutritional", "Insect", "Environmental", "Healthy"],
+    "severity_levels": ["None", "Low", "Moderate", "High", "Critical"],
+    "last_updated": "2024-01-15T10:30:00Z",
+    "version": "1.0",
+    "expert_verified": true,
+    "source_reference": "Plant Pathology Reference Database, Agricultural Extension Services"
+  }
+}

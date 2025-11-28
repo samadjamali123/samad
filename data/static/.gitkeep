@@ -1,0 +1,13 @@
+# This file ensures the static directory is tracked by git
+# In a real deployment, this directory would contain:
+# - disease/ subdirectory with disease images
+# - sample_images/ subdirectory with test plant leaf images
+# - css/ subdirectory with custom stylesheets
+# - js/ subdirectory with JavaScript files
+
+# Disease image naming convention:
+# static/diseases/{disease_name}_{view}_{index}.jpg
+# Examples:
+# - static/diseases/leaf_rust_symptom_1.jpg
+# - static/diseases/powdery_mildew_leaf_close.jpg
+# - static/diseases/bacterial_spot_tomato_1.jpg

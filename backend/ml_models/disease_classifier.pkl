@@ -1,0 +1,44 @@
+# Placeholder for trained disease classification model
+# In a real implementation, this would be a serialized PyTorch model
+# or scikit-learn model with trained weights for plant disease detection
+
+# To create a real model:
+# 1. Collect labeled plant disease images
+# 2. Preprocess images (resize, normalize, augment)
+# 3. Train CNN model (ResNet, EfficientNet, or custom architecture)
+# 4. Validate model performance
+# 5. Serialize with pickle for deployment
+
+# Example training code structure:
+#
+# import torch
+# import torch.nn as nn
+# import torchvision.transforms as transforms
+# from torch.utils.data import DataLoader
+#
+# class PlantDiseaseModel(nn.Module):
+#     def __init__(self, num_classes=15):
+#         super().__init__()
+#         self.model = torchvision.models.resnet18(pretrained=True)
+#         self.model.fc = nn.Linear(512, num_classes)
+#
+#     def forward(self, x):
+#         return self.model(x)
+#
+# # Train and save
+# model = PlantDiseaseModel()
+# # ... training code ...
+# torch.save(model.state_dict(), 'disease_classifier.pth')
+#
+# # For pickle format:
+# import pickle
+# model_data = {
+#     'model': model,
+#     'class_names': ['Healthy', 'Leaf Rust', 'Powdery Mildew', ...],
+#     'input_size': (224, 224)
+# }
+# with open('disease_classifier.pkl', 'wb') as f:
+#     pickle.dump(model_data, f)
+
+# For now, the disease_detector.py service will use mock inference
+# when no real model is available
