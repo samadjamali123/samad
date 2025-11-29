@@ -1,0 +1,203 @@
+# Prometheus Configuration for Plant Leaf Disease Detection System
+# Comprehensive monitoring configuration with custom metrics and alerting
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'plant-disease-prod'
+    environment: 'production'
+
+# Rule files for alerting
+rule_files:
+  - "alert_rules.yml"
+  - "recording_rules.yml"
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+      scheme: http
+      timeout: 10s
+      api_version: v2
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    honor_labels: true
+
+  # Plant Disease Detection Application
+  - job_name: 'plant-disease-backend'
+    static_configs:
+      - targets: 
+        - 'plant-disease-backend-service:80'
+        - 'plant-disease-backend-service:8000'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+    
+    # Custom relabeling for application metrics
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_label_version]
+        target_label: version
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_label_component]
+        target_label: component
+
+  # Kubernetes API Server
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+      - role: endpoints
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: default;kubernetes;https
+
+  # Kubernetes Nodes
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+      - role: node
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+
+  # Kubernetes Pods
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+
+  # Redis Monitoring
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # PostgreSQL Monitoring
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Nginx Ingress Controller
+  - job_name: 'nginx-ingress'
+    static_configs:
+      - targets: ['nginx-ingress-controller:10254']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Node Exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: 
+        - 'node-exporter:9100'
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Custom Application Metrics
+  - job_name: 'plant-disease-custom-metrics'
+    static_configs:
+      - targets: ['plant-disease-backend-service:80']
+    scrape_interval: 15s
+    metrics_path: '/api/v1/metrics'
+    honor_labels: true
+    
+    # Relabel custom metrics
+    relabel_configs:
+      - source_labels: [__name__]
+        regex: 'plant_disease_.*'
+        target_label: application
+        replacement: 'plant-detection'
+      - source_labels: [__name__]
+        regex: 'model_inference_.*'
+        target_label: domain
+        replacement: 'ai-models'
+
+  # Business Metrics
+  - job_name: 'plant-disease-business-metrics'
+    static_configs:
+      - targets: ['plant-disease-backend-service:80']
+    scrape_interval: 60s
+    metrics_path: '/api/v1/business-metrics'
+    honor_labels: true
+
+# Remote write configuration for long-term storage
+remote_write:
+  - url: "https://prometheus-remote-write.example.com/api/v1/write"
+    queue_config:
+      max_samples_per_send: 1000
+      max_shards: 200
+      capacity: 2500
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'go_.*|process_.*|prometheus_.*'
+        action: drop
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 15d
+    retention.size: 50GB
+    
+    # Compression
+    compression: zstd
+    
+    # WAL configuration
+    wal_compression: true
+    max_block_duration: 2h
+
+# Web configuration
+web:
+  enable_admin_api: true
+  page_title: "Plant Disease Detection Monitoring"
+  external_url: "https://prometheus.plantdisease.example.com"
+
+# Query configuration
+query:
+  max_concurrency: 20
+  max_samples: 50000000
+  timeout: 2m

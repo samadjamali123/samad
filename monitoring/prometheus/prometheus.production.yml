@@ -1,0 +1,175 @@
+# Prometheus Configuration for Plant Disease Detection System
+# Production-grade monitoring with comprehensive data collection
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'plant-disease-production'
+    environment: 'production'
+    datacenter: 'aws-us-east-1'
+    region: 'us-east-1'
+
+# Alert Manager Configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+  # Load alert rules
+  rule_files:
+    - "alert.rules.yml"
+
+# Scraping Configuration
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: instance
+        replacement: 'prometheus'
+
+  # FastAPI Backend Metrics
+  - job_name: 'plant-disease-backend'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: instance
+        replacement: 'backend'
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: service
+        replacement: 'api'
+
+  # Node Exporter System Metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: instance
+        replacement: 'node-exporter'
+
+  # Redis Metrics
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: instance
+        replacement: 'redis'
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: service
+        replacement: 'cache'
+
+  # Nginx Metrics
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-lb:9113']
+    metrics_path: '/nginx_status'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: instance
+        replacement: 'nginx'
+
+  # Streamlit Frontend Metrics (if available)
+  - job_name: 'plant-disease-frontend'
+    static_configs:
+      - targets: ['frontend:8501']
+    metrics_path: '/_stcore/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: instance
+        replacement: 'frontend'
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: service
+        replacement: 'ui'
+
+  # PostgreSQL Metrics (via exporter)
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: instance
+        replacement: 'postgres'
+      - source_labels: [__address__]
+        regex: '(.*)'
+        target_label: service
+        replacement: 'database'
+
+# Storage Configuration
+remote_write:
+  # Optional remote storage for long-term data
+  - url: "${REMOTE_PROMETHEUS_URL}"
+    basic_auth:
+      username: "${REMOTE_PROMETHEUS_USER}"
+      password: "${REMOTE_PROMETHEUS_PASSWORD}"
+    queue_config:
+      max_samples_per_send: 1000
+      max_shards: 200
+      capacity: 2500
+      send_timeout: 30s
+      backoff_config:
+        min_period: 5s
+        max_period: 60s
+        max_retries: 5
+
+# Read Configuration for Federation (Optional)
+remote_read:
+  - url: "${REMOTE_PROMETHEUS_READ_URL}"
+    basic_auth:
+      username: "${REMOTE_PROMETHEUS_USER}"
+      password: "${REMOTE_PROMETHEUS_PASSWORD}"
+    read_recent: true
+    fetch_timeout: 5m
+
+# Data Retention Configuration
+tsdb:
+  retention.time: 30d
+  retention.size: 50GB
+  wal:
+    compression: true
+    max_segment_size: 512MB
+  head_chunks:
+    max_size: 100MB
+  chunk_range_prometheus: 30m
+
+# Query Logging
+query_log:
+  enabled: true
+  max_samples: 100000
+  max_staleness: 1h

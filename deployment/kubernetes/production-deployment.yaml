@@ -1,0 +1,506 @@
+---
+# Production Kubernetes Deployment for Plant Leaf Disease Detection System
+# Comprehensive configuration with auto-scaling, security, and monitoring
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: plant-disease-prod
+  labels:
+    name: plant-disease-prod
+    environment: production
+    app: plant-disease-detection
+
+---
+# ConfigMap for application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plant-disease-config
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+    component: backend
+data:
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  ENABLE_ADVANCED_ANALYSIS: "true"
+  ENABLE_TREATMENT_CALCULATOR: "true"
+  ENABLE_RESULT_SHARING: "true"
+  RATE_LIMITING_ENABLED: "true"
+  MAX_REQUESTS_PER_MINUTE: "100"
+  ENABLE_COMPRESSION: "true"
+
+---
+# Secret for sensitive configuration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: plant-disease-secrets
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+    component: backend
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual encoded secrets
+  GROK_API_KEY: <BASE64_ENCODED_GROK_KEY>
+  PLANTNET_API_KEY: <BASE64_ENCODED_PLANTNET_KEY>
+  SECRET_KEY: <BASE64_ENCODED_SECRET_KEY>
+  REDIS_URL: <BASE64_ENCODED_REDIS_URL>
+  DATABASE_URL: <BASE64_ENCODED_DATABASE_URL>
+
+---
+# Persistent Volume Claims for application data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plant-disease-storage
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+    component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plant-disease-logs
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+    component: logs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard
+
+---
+# Backend Application Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plant-disease-backend
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+    component: backend
+    version: v1.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: plant-disease-detection
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: plant-disease-detection
+        component: backend
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: plant-disease-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: backend
+        image: plant-detection/backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: plant-disease-config
+              key: ENVIRONMENT
+        - name: DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: plant-disease-config
+              key: DEBUG
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: plant-disease-config
+              key: LOG_LEVEL
+        - name: GROK_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: plant-disease-secrets
+              key: GROK_API_KEY
+        - name: PLANTNET_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: plant-disease-secrets
+              key: PLANTNET_API_KEY
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: plant-disease-secrets
+              key: SECRET_KEY
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: plant-disease-secrets
+              key: REDIS_URL
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: plant-disease-secrets
+              key: DATABASE_URL
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+            ephemeral-storage: 2Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+            ephemeral-storage: 4Gi
+        volumeMounts:
+        - name: app-storage
+          mountPath: /app/data
+          subPath: data
+        - name: app-storage
+          mountPath: /app/uploads
+          subPath: uploads
+        - name: app-logs
+          mountPath: /app/logs
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+      volumes:
+      - name: app-storage
+        persistentVolumeClaim:
+          claimName: plant-disease-storage
+      - name: app-logs
+        persistentVolumeClaim:
+          claimName: plant-disease-logs
+      terminationGracePeriodSeconds: 30
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - plant-disease-detection
+                - key: component
+                  operator: In
+                  values:
+                  - backend
+              topologyKey: kubernetes.io/hostname
+
+---
+# Service Account with RBAC
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: plant-disease-service-account
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: plant-disease-role
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: plant-disease-role-binding
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: plant-disease-role
+subjects:
+- kind: ServiceAccount
+  name: plant-disease-service-account
+  namespace: plant-disease-prod
+
+---
+# Service for backend application
+apiVersion: v1
+kind: Service
+metadata:
+  name: plant-disease-backend-service
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+    component: backend
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    app: plant-disease-detection
+    component: backend
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: plant-disease-backend-hpa
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+    component: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: plant-disease-backend
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 4
+        periodSeconds: 15
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      selectPolicy: Min
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: plant-disease-backend-pdb
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+    component: backend
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: plant-disease-detection
+      component: backend
+
+---
+# Network Policies
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: plant-disease-network-policy
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+spec:
+  podSelector:
+    matchLabels:
+      app: plant-disease-detection
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 6379  # Redis
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+
+---
+# Resource Quotas
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: plant-disease-quota
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: 20Gi
+    limits.cpu: "20"
+    limits.memory: 40Gi
+    persistentvolumeclaims: "10"
+    pods: "50"
+    services: "10"
+    secrets: "20"
+    configmaps: "20"
+
+---
+# Limit Ranges
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: plant-disease-limits
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "1Gi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "128Mi"
+    type: Container
+  - max:
+      cpu: "4"
+      memory: "8Gi"
+    min:
+      cpu: "50m"
+      memory: "64Mi"
+    type: Container
+
+---
+# Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: plant-disease-ingress
+  namespace: plant-disease-prod
+  labels:
+    app: plant-disease-detection
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - api.plantdisease.example.com
+    secretName: plant-disease-tls
+  rules:
+  - host: api.plantdisease.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: plant-disease-backend-service
+            port:
+              number: 80

@@ -1,0 +1,593 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with Backup
+  postgres:
+    image: postgres:15-alpine
+    container_name: plant_disease_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-plant_disease_detector}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      POSTGRES_BACKUP_SCHEDULE: "0 2 * * *"  # Daily at 2 AM
+      POSTGRES_BACKUP_RETENTION_DAYS: "30"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_backups:/backups
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./database/backup-script.sh:/scripts/backup.sh:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-plant_disease_detector}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 3G
+        reservations:
+          cpus: '0.5'
+          memory: 1.5G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  # Redis Cluster for High Availability
+  redis-master:
+    image: redis:7-alpine
+    container_name: plant_disease_redis_master
+    restart: unless-stopped
+    command: >
+      redis-server
+      --port 6379
+      --appendonly yes
+      --replicated no
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    volumes:
+      - redis_master_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 1.5G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+  redis-replica:
+    image: redis:7-alpine
+    container_name: plant_disease_redis_replica
+    restart: unless-stopped
+    command: >
+      redis-server
+      --port 6380
+      --appendonly yes
+      --replicaof redis-master 6379
+      --masterauth ${REDIS_PASSWORD}
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_replica_data:/data
+    ports:
+      - "6380:6380"
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+  # MinIO Object Storage with Erasure Coding
+  minio:
+    image: minio/minio:latest
+    container_name: plant_disease_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_DOMAIN: ${MINIO_DOMAIN}
+      MINIO_SERVER_URL: ${MINIO_SERVER_URL}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL}
+      MINIO_ERASURE_SET: "4"  # 4-drive erasure coding
+      MINIO_STORAGE_CLASS_STANDARD: "EC:4"
+    volumes:
+      - minio_data1:/data1
+      - minIO_DATA2:/data2
+      - MinIO_DATA3:/data3
+      - MinIO_DATA4:/data4
+    ports:
+      - "9000:9000"  # API
+      - "9001:9001"  # Console
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # FastAPI Backend with Auto-scaling
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.production
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date -u +Y-%m-%dT%H:%M:%SZ)}
+        - VCS_REF=${VCS_REF:-$(git rev-parse --short HEAD)}
+    image: plant-disease-backend:${VERSION:-latest}
+    container_name: plant_disease_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis-master:6379/0
+      - REDIS_FAILOVER_URL=redis://:${REDIS_PASSWORD}@redis-replica:6380/0
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_ACCESS_KEY_ID=${MINIO_ROOT_USER}
+      - S3_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-plant-disease-images}
+      - S3_REGION=us-east-1
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-50}
+      - MAX_CONCURRENT_UPLOADS=${MAX_CONCURRENT_UPLOADS:-10}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MONITORING_ENABLED=true
+      - PROMETHEUS_ENABLED=true
+      - PROMETHEUS_PORT=8000
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
+      - RATE_LIMIT_REQUESTS_PER_MINUTE=${RATE_LIMIT_REQUESTS_PER_MINUTE:-60}
+      - AUTO_CLEANUP_ENABLED=true
+      - AUTO_CLEANUP_INTERVAL_HOURS=24
+      - CDN_BASE_URL=${CDN_BASE_URL}
+      - SSL_ENABLED=${SSL_ENABLED:-true}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - model_storage:/app/model_storage
+      - backend_cache:/app/cache
+      - ssl_certs:/app/ssl:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+
+  # Streamlit Frontend with Load Balancing
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.production
+    image: plant-disease-frontend:${VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_URL=https://${DOMAIN:-plantdisease.example.com}/api/v1
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_ENABLE_CORS=true
+      - STREAMLIT_SERVER_ENABLE_WEB_SOCKET=true
+      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=true
+      - BROWSER_GATHER_USAGE_STATS=false
+      - THEME=${THEME:-auto}
+      - ENABLE_PWA_FEATURES=true
+      - ENABLE_CAMERA_FEATURES=true
+      - ENABLE_OFFLINE_MODE=true
+      - CDN_ENABLED=${CDN_ENABLED:-true}
+      - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-3600}
+      - GOOGLE_ANALYTICS_ID=${GOOGLE_ANALYTICS_ID}
+      - SENTRY_DSN=${SENTRY_DSN}
+    ports:
+      - "8501:8501"
+    volumes:
+      - frontend_cache:/app/frontend/cache
+      - ssl_certs:/app/ssl:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 2.5G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+      replicas: 2
+
+  # Nginx Load Balancer with SSL Termination
+  nginx-lb:
+    image: nginx:alpine
+    container_name: plant_disease_nginx_lb
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./nginx/nginx.production.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+      - ./nginx/cache:/var/nginx/cache
+    ports:
+      - "80:80"
+      - "443:443"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Prometheus for Monitoring
+  prometheus:
+    image: prom/prometheus:v2.40.0
+    container_name: plant_disease_prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--storage.tsdb.wal-compression'
+    volumes:
+      - ./monitoring/prometheus/prometheus.production.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    profiles:
+      - monitoring
+
+  # Grafana for Visualization
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: plant_disease_grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      - GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      - GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource,grafana-worldmap-panel,grafana-piechart-panel,grafana-statuspanel
+      - GF_SMTP_ENABLED: ${GF_SMTP_ENABLED:-false}
+      - GF_SMTP_HOST: ${GF_SMTP_HOST}
+      - GF_SMTP_USER: ${GF_SMTP_USER}
+      - GF_SMTP_PASSWORD: ${GF_SMTP_PASSWORD}
+      - GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL:-https://plantdisease.example.com/grafana}
+      - GF_USERS_ALLOW_SIGN_UP: false
+      - GF_AUTH_ANONYMOUS_ENABLED: false
+      - GF_AUTH_DISABLE_LOGIN_FORM: false
+      - GF_SECURITY_ALLOW_EMBEDDING: false
+      - GF_SECURITY_CONTENT_TYPE_PROTECTION: true
+      - GF_SECURITY_COOKIE_SAMESITE: true
+      - GF_SECURITY_X_CONTENT_TYPE_OPTIONS: nosniff
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    profiles:
+      - monitoring
+
+  # AlertManager for Alerting
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: plant_disease_alertmanager
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=${ALERTMANAGER_WEB_URL:-http://localhost:9093}'
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    profiles:
+      - monitoring
+
+  # Redis Exporter for Monitoring
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.23.1
+    container_name: plant_disease_redis_exporter
+    restart: unless-stopped
+    depends_on:
+      - redis-master
+    command:
+      - '-redis.addr=redis://redis-master:6379'
+      - '-redis.password=${REDIS_PASSWORD}'
+      - '-namespace=plant_disease_redis'
+      - 'web.listen-address=0.0.0.0:9121'
+    ports:
+      - "9121:9121"
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    profiles:
+      - monitoring
+
+  # Node Exporter for System Metrics
+  node-exporter:
+    image: prom/node-exporter:v1.6.0
+    container_name: plant_disease_node_exporter
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem'
+      - '--collector.diskstats'
+      - '--collector.meminfo'
+      - '--collector.load'
+      - '--collector.cpu'
+      - '--collector.netdev'
+      - '--collector.netclass'
+      - '--collector.netdev'
+      - '--collector.stat'
+      - '--collector.time'
+      - '--collector.timex'
+      - '--web.listen-address=0.0.0.0:9100'
+    volumes:
+      - '/:/host:ro,rslave'
+    ports:
+      - "9100:9100"
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    profiles:
+      - monitoring
+
+  # Database Backup Service
+  db-backup:
+    build:
+      context: .
+      dockerfile: backup/Dockerfile
+    container_name: plant_disease_db_backup
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-plant_disease_detector}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_ACCESS_KEY_ID=${MINIO_ROOT_USER}
+      - S3_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
+      - S3_BUCKET_NAME=${BACKUP_BUCKET_NAME:-plant-disease-backups}
+      - S3_REGION=us-east-1
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-30}
+      - ENCRYPTION_KEY=${BACKUP_ENCRYPTION_KEY}
+    volumes:
+      - postgres_backups:/backups
+      - ./backup/backup-script.sh:/scripts/backup.sh:ro
+    networks:
+      - plant_disease_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+# Network Configuration
+networks:
+  plant_disease_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+# Persistent Volumes with Backup Configuration
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${POSTGRES_DATA_PATH:-./data/postgres}
+
+  postgres_backups:
+    driver: local
+
+  redis_master_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REDIS_DATA_PATH:-./data/redis}
+
+  redis_replica_data:
+    driver: local
+
+  minio_data1:
+    driver: local
+  minio_data2:
+    driver: local
+  minio_data3:
+    driver: local
+  minio_data4:
+    driver: local
+
+  model_storage:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${MODEL_STORAGE_PATH:-./models}
+
+  backend_cache:
+    driver: local
+
+  frontend_cache:
+    driver: local
+
+  prometheus_data:
+    driver: local
+
+  grafana_data:
+    driver: local
+
+  alertmanager_data:
+    driver: local
+
+  nginx_logs:
+    driver: local
+
+  ssl_certs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${SSL_CERTS_PATH:-./nginx/ssl}
