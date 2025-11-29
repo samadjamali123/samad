@@ -1,0 +1,430 @@
+# Alert Rules for Plant Disease Detection System
+# Production-grade alerting with comprehensive monitoring
+
+groups:
+  # System Health Alerts
+  - name: plant_disease_system_health
+    rules:
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          component: cpu
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "High CPU usage detected on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes. Current value: {{ $value }}%"
+          runbook_url: "https://plantdisease.example.com/runbooks/high-cpu"
+
+      # Critical CPU Usage
+      - alert: CriticalCPUUsage
+        expr: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)) > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+          component: cpu
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Critical CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 95% for more than 2 minutes. Current value: {{ $value }}%"
+          runbook_url: "https://plantdisease.example.com/runbooks/critical-cpu"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          component: memory
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes. Current value: {{ $value }}%"
+          runbook_url: "https://plantdisease.example.com/runbooks/high-memory"
+
+      # Critical Memory Usage
+      - alert: CriticalMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+          component: memory
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Critical memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 95% for more than 2 minutes. Current value: {{ $value }}%"
+          runbook_url: "https://plantdisease.example.com/runbooks/critical-memory"
+
+      # Disk Space Usage
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+          component: disk
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is above 85% for more than 10 minutes. Current value: {{ $value }}%"
+          runbook_url: "https://plantdisease.example.com/runbooks/high-disk"
+
+      # Critical Disk Usage
+      - alert: CriticalDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100) > 95
+        for: 5m
+        labels:
+          severity: critical
+          service: system
+          component: disk
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Critical disk usage on {{ $labels.instance }}"
+          description: "Disk usage is above 95% for more than 5 minutes. Current value: {{ $value }}%"
+          runbook_url: "https://plantdisease.example.com/runbooks/critical-disk"
+
+  # Application Performance Alerts
+  - name: plant_disease_application_performance
+    rules:
+      # High Error Rate
+      - alert: HighErrorRate
+        expr: (rate(fastapi_http_requests_total{status=~"5.."}[5m]) / rate(fastapi_http_requests_total[5m])) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+          component: backend
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "High error rate in Plant Disease API"
+          description: "Error rate is above 5% for more than 5 minutes. Current value: {{ $value }}%"
+          runbook_url: "https://plantdisease.example.com/runbooks/high-error-rate"
+
+      # Critical Error Rate
+      - alert: CriticalErrorRate
+        expr: (rate(fastapi_http_requests_total{status=~"5.."}[5m]) / rate(fastapi_http_requests_total[5m])) * 100 > 15
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+          component: backend
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Critical error rate in Plant Disease API"
+          description: "Error rate is above 15% for more than 2 minutes. Current value: {{ $value }}%"
+          runbook_url: "https://plantdisease.example.com/runbooks/critical-error-rate"
+
+      # High Response Time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(fastapi_http_request_duration_seconds_bucket[5m])) * 1000 > 2000
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+          component: backend
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "High response time in Plant Disease API"
+          description: "95th percentile response time is above 2 seconds for more than 5 minutes. Current value: {{ $value }}ms"
+          runbook_url: "https://plantdisease.example.com/runbooks/high-response-time"
+
+      # Critical Response Time
+      - alert: CriticalResponseTime
+        expr: histogram_quantile(0.95, rate(fastapi_http_request_duration_seconds_bucket[5m])) * 1000 > 5000
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+          component: backend
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Critical response time in Plant Disease API"
+          description: "95th percentile response time is above 5 seconds for more than 2 minutes. Current value: {{ $value }}ms"
+          runbook_url: "https://plantdisease.example.com/runbooks/critical-response-time"
+
+      # Low Request Rate
+      - alert: LowRequestRate
+        expr: rate(fastapi_http_requests_total[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: info
+          service: api
+          component: backend
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Low request rate for Plant Disease API"
+          description: "Request rate is below 0.1 req/s for more than 10 minutes. This might indicate health check issues."
+          runbook_url: "https://plantdisease.example.com/runbooks/low-request-rate"
+
+      # API Service Down
+      - alert: APIServiceDown
+        expr: up{job="plant-disease-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+          component: backend
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Plant Disease API is down"
+          description: "The Plant Disease API service is not responding to health checks."
+          runbook_url: "https://plantdisease.example.com/runbooks/api-service-down"
+
+  # Model Performance Alerts
+  - name: plant_disease_model_performance
+    rules:
+      # Low Model Confidence
+      - alert: LowModelConfidence
+        expr: avg(plant_disease_model_confidence_score{model_type="ensemble"}[10m]) < 0.6
+        for: 5m
+        labels:
+          severity: warning
+          service: ai_models
+          component: plant_classification
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Low model confidence scores"
+          description: "Average model confidence is below 60% for more than 5 minutes. Current value: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/low-model-confidence"
+
+      # Very Low Model Confidence
+      - alert: VeryLowModelConfidence
+        expr: avg(plant_disease_model_confidence_score{model_type="ensemble"}[10m]) < 0.4
+        for: 3m
+        labels:
+          severity: critical
+          service: ai_models
+          component: plant_classification
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Very low model confidence scores"
+          description: "Average model confidence is below 40% for more than 3 minutes. Current value: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/very-low-model-confidence"
+
+      # High Model Processing Time
+      - alert: HighModelProcessingTime
+        expr: avg(plant_disease_model_processing_time_ms[5m]) > 3000
+        for: 5m
+        labels:
+          severity: warning
+          service: ai_models
+          component: processing
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "High model processing time"
+          description: "Average model processing time is above 3 seconds for more than 5 minutes. Current value: {{ $value }}ms"
+          runbook_url: "https://plantdisease.example.com/runbooks/high-processing-time"
+
+      # Critical Model Processing Time
+      - alert: CriticalModelProcessingTime
+        expr: avg(plant_disease_model_processing_time_ms[5m]) > 10000
+        for: 2m
+        labels:
+          severity: critical
+          service: ai_models
+          component: processing
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Critical model processing time"
+          description: "Average model processing time is above 10 seconds for more than 2 minutes. Current value: {{ $value }}ms"
+          runbook_url: "https://plantdisease.example.com/runbooks/critical-processing-time"
+
+      # Model Error Rate
+      - alert: ModelErrorRate
+        expr: rate(plant_disease_model_predictions_total{status="error"}[5m]) / rate(plant_disease_model_predictions_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: ai_models
+          component: prediction
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "High model error rate"
+          description: "Model prediction error rate is above 10% for more than 3 minutes. Current value: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/model-error-rate"
+
+  # Database Performance Alerts
+  - name: plant_disease_database_performance
+    rules:
+      # High Database Connections
+      - alert: HighDatabaseConnections
+        expr: pg_stat_activity_numbackends > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+          component: postgresql
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "High database connections"
+          description: "Database has more than 80 active connections for more than 5 minutes. Current value: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/high-db-connections"
+
+      # Critical Database Connections
+      - alert: CriticalDatabaseConnections
+        expr: pg_stat_activity_numbackends > 90
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+          component: postgresql
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Critical database connections"
+          description: "Database has more than 90 active connections for more than 2 minutes. Current value: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/critical-db-connections"
+
+      # Slow Database Queries
+      - alert: SlowDatabaseQueries
+        expr: pg_stat_statements_mean_time_seconds > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+          component: postgresql
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Average query time is above 1 second for more than 5 minutes. Current value: {{ $value }}s"
+          runbook_url: "https://plantdisease.example.com/runbooks/slow-queries"
+
+      # Database Replication Lag
+      - alert: DatabaseReplicationLag
+        expr: pg_replication_lag_seconds > 30
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+          component: replication
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Database replication lag"
+          description: "Database replication lag is above 30 seconds for more than 5 minutes. Current value: {{ $value }}s"
+          runbook_url: "https://plantdisease.example.com/runbooks/replication-lag"
+
+  # Cache Performance Alerts
+  - name: plant_disease_cache_performance
+    rules:
+      # Low Cache Hit Rate
+      - alert: LowCacheHitRate
+        expr: rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: cache
+          component: redis
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is below 80% for more than 10 minutes. Current value: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/low-cache-hit-rate"
+
+      # Very Low Cache Hit Rate
+      - alert: VeryLowCacheHitRate
+        expr: rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) < 0.5
+        for: 5m
+        labels:
+          severity: critical
+          service: cache
+          component: redis
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Very low cache hit rate"
+          description: "Cache hit rate is below 50% for more than 5 minutes. Current value: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/very-low-cache-hit-rate"
+
+      # High Memory Usage
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+          component: redis
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is above 90% for more than 5 minutes. Current value: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/redis-high-memory"
+
+  # Business Metrics Alerts
+  - name: plant_disease_business_metrics
+    rules:
+      # Unusual Activity Pattern
+      - alert: UnusualActivityPattern
+        expr: abs(rate(plant_disease_analyses_total[1h]) - rate(plant_disease_analyses_total[24h] offset 23h)) > 2 * rate(plant_disease_analyses_total[24h] offset 23h)
+        for: 30m
+        labels:
+          severity: info
+          service: business
+          component: usage
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Unusual activity pattern detected"
+          description: "Current analysis rate is significantly different from the same time yesterday. Current: {{ $value }}, Historical: {{ $value | humanizeRate }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/unusual-activity"
+
+      # No Activity Warning
+      - alert: NoActivityWarning
+        expr: rate(plant_disease_analyses_total[1h]) == 0
+        for: 30m
+        labels:
+          severity: warning
+          service: business
+          component: usage
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "No user activity detected"
+          description: "No plant disease analyses have been performed in the last 30 minutes."
+          runbook_url: "https://plantdisease.example.com/runbooks/no-activity"
+
+      # Disease Detection Spike
+      - alert: DiseaseDetectionSpike
+        expr: rate(plant_disease_disease_detections_total{detection="positive"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: info
+          service: business
+          component: disease_detection
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Disease detection spike detected"
+          description: "Disease detection rate is above 10 per minute. This might indicate an outbreak or testing. Current rate: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/detection-spike"
+
+  # User Experience Alerts
+  - name: plant_disease_user_experience
+    rules:
+      # Frontend Errors
+      - alert: FrontendErrors
+        expr: rate(frontend_js_errors_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          service: frontend
+          component: javascript
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "Frontend JavaScript errors detected"
+          description: "JavaScript error rate is above 1% for more than 5 minutes. Current rate: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/frontend-errors"
+
+      # Image Upload Failures
+      - alert: ImageUploadFailures
+        expr: rate(image_upload_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: frontend
+          component: upload
+          instance: "{{ $labels.instance }}"
+        annotations:
+          summary: "High image upload failure rate"
+          description: "Image upload failure rate is above 10% for more than 5 minutes. Current rate: {{ $value }}"
+          runbook_url: "https://plantdisease.example.com/runbooks/upload-failures"

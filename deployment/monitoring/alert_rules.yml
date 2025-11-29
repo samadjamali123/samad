@@ -1,0 +1,385 @@
+# Alert Rules for Plant Leaf Disease Detection System
+# Comprehensive alerting for application performance, business metrics, and infrastructure
+
+groups:
+  # Application Performance Alerts
+  - name: plant-disease-application-alerts
+    interval: 30s
+    rules:
+      # High Error Rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: plant-disease-backend
+          category: application
+        annotations:
+          summary: "High error rate detected in Plant Disease Detection API"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+          runbook_url: "https://runbooks.plantdisease.example.com/high-error-rate"
+          dashboard_url: "https://grafana.plantdisease.example.com/d/application-overview"
+
+      # High Response Time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: plant-disease-backend
+          category: performance
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s for the last 5 minutes"
+          runbook_url: "https://runbooks.plantdisease.example.com/high-response-time"
+          dashboard_url: "https://grafana.plantdisease.example.com/d/performance-dashboard"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes{container="backend"} / container_spec_memory_limit_bytes) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          service: plant-disease-backend
+          category: resources
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }} of the limit"
+          runbook_url: "https://runbooks.plantdisease.example.com/high-memory-usage"
+
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{container="backend"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: plant-disease-backend
+          category: resources
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value | humanizePercentage }} for the last 5 minutes"
+          runbook_url: "https://runbooks.plantdisease.example.com/high-cpu-usage"
+
+      # Application Down
+      - alert: ApplicationDown
+        expr: up{job="plant-disease-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: plant-disease-backend
+          category: availability
+        annotations:
+          summary: "Plant Disease Detection application is down"
+          description: "Application has been down for more than 1 minute"
+          runbook_url: "https://runbooks.plantdisease.example.com/application-down"
+          dashboard_url: "https://grafana.plantdisease.example.com/d/application-overview"
+
+      # Database Connection Issues
+      - alert: DatabaseConnectionIssues
+        expr: rate(db_connections_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: plant-disease-backend
+          category: database
+        annotations:
+          summary: "Database connection errors detected"
+          description: "Database connection error rate is {{ $value | humanizePercentage }} per second"
+          runbook_url: "https://runbooks.plantdisease.example.com/database-connection-issues"
+
+  # AI Model Performance Alerts
+  - name: plant-disease-ai-model-alerts
+    interval: 60s
+    rules:
+      # Low Model Accuracy
+      - alert: LowModelAccuracy
+        expr: model_accuracy_percentage < 85
+        for: 15m
+        labels:
+          severity: warning
+          service: plant-disease-ai-models
+          category: ai-performance
+        annotations:
+          summary: "AI model accuracy is below threshold"
+          description: "Model accuracy is {{ $value }}%, below the 85% threshold"
+          runbook_url: "https://runbooks.plantdisease.example.com/low-model-accuracy"
+
+      # High Model Inference Time
+      - alert: HighModelInferenceTime
+        expr: histogram_quantile(0.95, rate(model_inference_duration_seconds_bucket[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+          service: plant-disease-ai-models
+          category: ai-performance
+        annotations:
+          summary: "High AI model inference time"
+          description: "95th percentile inference time is {{ $value }}s"
+          runbook_url: "https://runbooks.plantdisease.example.com/high-inference-time"
+
+      # AI Model Service Unavailable
+      - alert: AIModelServiceUnavailable
+        expr: ai_service_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: plant-disease-ai-models
+          category: availability
+        annotations:
+          summary: "AI model service is unavailable"
+          description: "AI model service has been down for more than 2 minutes"
+          runbook_url: "https://runbooks.plantdisease.example.com/ai-service-down"
+
+      # Low Cache Hit Rate
+      - alert: LowCacheHitRate
+        expr: (cache_hits_total / (cache_hits_total + cache_misses_total)) < 0.7
+        for: 10m
+        labels:
+          severity: warning
+          service: plant-disease-backend
+          category: performance
+        annotations:
+          summary: "Low cache hit rate detected"
+          description: "Cache hit rate is {{ $value | humanizePercentage }}, below 70%"
+          runbook_url: "https://runbooks.plantdisease.example.com/low-cache-hit-rate"
+
+  # Business Metrics Alerts
+  - name: plant-disease-business-alerts
+    interval: 300s
+    rules:
+      # Low Analysis Request Rate
+      - alert: LowAnalysisRequestRate
+        expr: rate(analysis_requests_total[1h]) < 0.5
+        for: 30m
+        labels:
+          severity: info
+          service: plant-disease-business
+          category: business-metrics
+        annotations:
+          summary: "Low analysis request rate"
+          description: "Analysis request rate is {{ $value | humanize }} requests per hour"
+          runbook_url: "https://runbooks.plantdisease.example.com/low-request-rate"
+
+      # High Disease Detection Rate
+      - alert: HighDiseaseDetectionRate
+        expr: rate(disease_detections_total[1h]) > 100
+        for: 15m
+        labels:
+          severity: info
+          service: plant-disease-business
+          category: business-metrics
+        annotations:
+          summary: "High disease detection rate"
+          description: "Disease detection rate is {{ $value | humanize }} detections per hour"
+          dashboard_url: "https://grafana.plantdisease.example.com/d/business-metrics"
+
+      # User Registration Spike
+      - alert: UserRegistrationSpike
+        expr: rate(user_registrations_total[1h]) > 50
+        for: 15m
+        labels:
+          severity: info
+          service: plant-disease-business
+          category: business-metrics
+        annotations:
+          summary: "Spike in user registrations"
+          description: "User registration rate is {{ $value | humanize }} users per hour"
+          dashboard_url: "https://grafana.plantdisease.example.com/d/user-analytics"
+
+  # Infrastructure Alerts
+  - name: plant-disease-infrastructure-alerts
+    interval: 60s
+    rules:
+      # High Disk Usage
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          service: plant-disease-infrastructure
+          category: storage
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+          runbook_url: "https://runbooks.plantdisease.example.com/high-disk-usage"
+
+      # Pod Restart Count
+      - alert: HighPodRestartCount
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: plant-disease-infrastructure
+          category: kubernetes
+        annotations:
+          summary: "High pod restart count"
+          description: "Pod {{ $labels.pod }} is restarting frequently"
+          runbook_url: "https://runbooks.plantdisease.example.com/high-pod-restarts"
+
+      # Node Down
+      - alert: NodeDown
+        expr: up{job="node-exporter"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: plant-disease-infrastructure
+          category: availability
+        annotations:
+          summary: "Node {{ $labels.instance }} is down"
+          description: "Node has been down for more than 5 minutes"
+          runbook_url: "https://runbooks.plantdisease.example.com/node-down"
+
+      # Kubernetes Pending Pods
+      - alert: PendingPods
+        expr: kube_pod_status_phase{phase="Pending"} > 5
+        for: 10m
+        labels:
+          severity: warning
+          service: plant-disease-infrastructure
+          category: kubernetes
+        annotations:
+          summary: "High number of pending pods"
+          description: "{{ $value }} pods are in pending state for more than 10 minutes"
+          runbook_url: "https://runbooks.plantdisease.example.com/pending-pods"
+
+  # Security Alerts
+  - name: plant-disease-security-alerts
+    interval: 60s
+    rules:
+      # High Rate of Failed Authentication
+      - alert: HighFailedAuthenticationRate
+        expr: rate(authentication_failures_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: plant-disease-security
+          category: security
+        annotations:
+          summary: "High rate of failed authentication attempts"
+          description: "Failed authentication rate is {{ $value | humanize }} attempts per minute"
+          runbook_url: "https://runbooks.plantdisease.example.com/high-auth-failures"
+
+      # Suspicious IP Activity
+      - alert: SuspiciousIPActivity
+        expr: rate(http_requests_total[5m]) by (client_ip) > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: plant-disease-security
+          category: security
+        annotations:
+          summary: "Suspicious activity from IP {{ $labels.client_ip }}"
+          description: "IP {{ $labels.client_ip }} is making {{ $value | humanize }} requests per second"
+          runbook_url: "https://runbooks.plantdisease.example.com/suspicious-ip"
+
+      # Unusual File Upload Pattern
+      - alert: UnusualFileUploadPattern
+        expr: rate(file_uploads_total[5m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+          service: plant-disease-security
+          category: security
+        annotations:
+          summary: "Unusual file upload pattern detected"
+          description: "File upload rate is {{ $value | humanize }} uploads per minute"
+          runbook_url: "https://runbooks.plantdisease.example.com/unusual-uploads"
+
+  # External Service Dependencies
+  - name: plant-disease-external-dependencies-alerts
+    interval: 60s
+    rules:
+      # Grok API Issues
+      - alert: GrokAPIDown
+        expr: grok_api_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: grok-api
+          category: external-dependencies
+        annotations:
+          summary: "Grok AI API is down"
+          description: "Grok API has been unavailable for more than 2 minutes"
+          runbook_url: "https://runbooks.plantdisease.example.com/grok-api-down"
+
+      # PlantNet API Issues
+      - alert: PlantNetAPIDown
+        expr: plantnet_api_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: plantnet-api
+          category: external-dependencies
+        annotations:
+          summary: "PlantNet API is down"
+          description: "PlantNet API has been unavailable for more than 2 minutes"
+          runbook_url: "https://runbooks.plantdisease.example.com/plantnet-api-down"
+
+      # iNaturalist API Issues
+      - alert: INaturalistAPIDown
+        expr: inaturalist_api_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: inaturalist-api
+          category: external-dependencies
+        annotations:
+          summary: "iNaturalist API is down"
+          description: "iNaturalist API has been unavailable for more than 2 minutes"
+          runbook_url: "https://runbooks.plantdisease.example.com/inaturalist-api-down"
+
+      # Database Connection Pool Exhaustion
+      - alert: DatabaseConnectionPoolExhaustion
+        expr: db_connections_active / db_connections_max > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          service: plant-database
+          category: database
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database connection pool usage is {{ $value | humanizePercentage }}"
+          runbook_url: "https://runbooks.plantdisease.example.com/db-pool-exhaustion"
+
+  # SLA and Business Metrics
+  - name: plant-disease-sla-alerts
+    interval: 300s
+    rules:
+      # SLA Violation - Response Time
+      - alert: SLAViolationResponseTime
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 15m
+        labels:
+          severity: warning
+          service: plant-disease-backend
+          category: sla
+        annotations:
+          summary: "SLA violation: Response time"
+          description: "99th percentile response time ({{ $value }}s) exceeds SLA of 5s"
+          runbook_url: "https://runbooks.plantdisease.example.com/sla-violation"
+
+      # SLA Violation - Availability
+      - alert: SLAViolationAvailability
+        expr: (sum(rate(http_requests_total{status!~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) < 0.999
+        for: 10m
+        labels:
+          severity: critical
+          service: plant-disease-backend
+          category: sla
+        annotations:
+          summary: "SLA violation: Availability"
+          description: "Application availability ({{ $value | humanizePercentage }}) is below 99.9% SLA"
+          runbook_url: "https://runbooks.plantdisease.example.com/sla-violation"
+
+      # SLA Violation - Error Rate
+      - alert: SLAViolationErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.001
+        for: 5m
+        labels:
+          severity: critical
+          service: plant-disease-backend
+          category: sla
+        annotations:
+          summary: "SLA violation: Error rate"
+          description: "Error rate ({{ $value | humanizePercentage }}) exceeds SLA of 0.1%"
+          runbook_url: "https://runbooks.plantdisease.example.com/sla-violation"

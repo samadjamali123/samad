@@ -1,0 +1,642 @@
+# GitHub Actions CI/CD Pipeline for Plant Leaf Disease Detection System
+# Comprehensive automated testing, security scanning, and deployment
+
+name: Plant Disease Detection CI/CD
+
+# Environment variables
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+on:
+  # Trigger on push to main branch
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  
+  # Trigger on pull requests
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      force_deploy:
+        description: 'Force deployment (bypass tests)'
+        required: false
+        default: false
+        type: boolean
+
+# Global permissions
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+  security-events: write
+  actions: read
+
+jobs:
+  # Code Quality and Security Checks
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.changes.outputs.should-deploy }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Detect changes
+      id: changes
+      uses: dorny/paths-filter@v2
+      with:
+        filters: |
+          core:
+            - 'backend/**'
+            - 'frontend/**'
+            - 'requirements*.txt'
+            - 'pyproject.toml'
+            - '.github/workflows/**'
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit black isort flake8 mypy pytest pytest-cov safety
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+    
+    - name: Code formatting check (Black)
+      run: |
+        black --check --diff --color backend/ tests/
+    
+    - name: Import sorting check (isort)
+      run: |
+        isort --check-only --diff backend/ tests/
+    
+    - name: Linting (Flake8)
+      run: |
+        flake8 backend/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 backend/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Type checking (MyPy)
+      run: |
+        mypy backend/ --ignore-missing-imports --no-strict-optional
+    
+    - name: Security scan (Bandit)
+      run: |
+        bandit -r backend/ -f json -o bandit-report.json
+        bandit -r backend/ -f txt
+    
+    - name: Dependency security check (Safety)
+      run: |
+        safety check --json --output safety-report.json
+        safety check
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+        retention-days: 30
+
+  # Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: needs.code-quality.outputs.should-deploy == 'true'
+    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov pytest-mock pytest-asyncio
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+        pip install -e .
+    
+    - name: Run unit tests
+      run: |
+        pytest tests/unit/ -v \
+          --cov=backend \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-report=term-missing \
+          --junitxml=test-results.xml
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unit-tests
+        name: codecov-umbrella
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.python-version }}
+        path: |
+          test-results.xml
+          htmlcov/
+        retention-days: 7
+
+  # Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    if: needs.code-quality.outputs.should-deploy == 'true'
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --entrypoint redis-server
+    
+      postgres:
+        image: postgres:15-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_USER: testuser
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-asyncio httpx
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+        pip install -e .
+    
+    - name: Run integration tests
+      env:
+        REDIS_URL: redis://localhost:6379/0
+        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+        GROK_API_KEY: test_key
+        PLANTNET_API_KEY: test_key
+      run: |
+        pytest tests/integration/ -v \
+          --junitxml=integration-test-results.xml
+    
+    - name: Upload integration test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: integration-test-results
+        path: integration-test-results.xml
+        retention-days: 7
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: needs.code-quality.outputs.should-deploy == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install locust pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install -e .
+    
+    - name: Start application for testing
+      env:
+        ENVIRONMENT: testing
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 &
+        sleep 10
+    
+    - name: Run performance tests
+      run: |
+        pytest tests/performance/ -v \
+          --junitxml=performance-test-results.xml \
+          --benchmark-only
+    
+    - name: Upload performance test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-test-results
+        path: performance-test-results.xml
+        retention-days: 7
+
+  # Build Docker Image
+  build-image:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: needs.code-quality.outputs.should-deploy == 'true'
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+    
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./deployment/docker/production.Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-image
+    if: github.ref == 'refs/heads/develop' && needs.code-quality.outputs.should-deploy == 'true'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+    
+    - name: Deploy to Kubernetes
+      run: |
+        export KUBECONFIG=kubeconfig
+        
+        # Update image tag in deployment
+        sed -i "s|plant-detection/backend:latest|${{ needs.build-image.outputs.image-tag }}|g" \
+          deployment/kubernetes/production-deployment.yaml
+        
+        # Apply configuration
+        kubectl apply -f deployment/kubernetes/production-deployment.yaml \
+          -n plant-disease-staging
+        
+        # Wait for rollout
+        kubectl rollout status deployment/plant-disease-backend \
+          -n plant-disease-staging --timeout=300s
+    
+    - name: Run smoke tests
+      run: |
+        export KUBECONFIG=kubeconfig
+        
+        # Get service URL
+        SERVICE_URL=$(kubectl get service plant-disease-backend-service \
+          -n plant-disease-staging -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        
+        # Wait for service to be ready
+        for i in {1..30}; do
+          if curl -f http://$SERVICE_URL/api/v1/health; then
+            echo "Service is healthy"
+            break
+          fi
+          echo "Waiting for service... attempt $i"
+          sleep 10
+        done
+        
+        # Run smoke tests
+        python -m pytest tests/smoke/staging_tests.py \
+          --base-url=http://$SERVICE_URL \
+          -v
+
+  # Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-image
+    if: |
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && 
+      needs.code-quality.outputs.should-deploy == 'true' &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.environment == 'production')
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+    
+    - name: Create backup before deployment
+      run: |
+        export KUBECONFIG=kubeconfig
+        
+        # Create database backup
+        kubectl create job --from=cronjob/db-backup \
+          pre-deployment-backup-$(date +%Y%m%d-%H%M%S) \
+          -n plant-disease-prod
+    
+    - name: Deploy to Kubernetes
+      run: |
+        export KUBECONFIG=kubeconfig
+        
+        # Update image tag in deployment
+        sed -i "s|plant-detection/backend:latest|${{ needs.build-image.outputs.image-tag }}|g" \
+          deployment/kubernetes/production-deployment.yaml
+        
+        # Apply configuration with strategic merge
+        kubectl apply -f deployment/kubernetes/production-deployment.yaml \
+          -n plant-disease-prod
+        
+        # Wait for rollout with progressive checks
+        kubectl rollout status deployment/plant-disease-backend \
+          -n plant-disease-prod --timeout=600s
+    
+    - name: Post-deployment verification
+      run: |
+        export KUBECONFIG=kubeconfig
+        
+        # Check pod health
+        kubectl get pods -n plant-disease-prod -l app=plant-disease-detection
+        
+        # Get service URL
+        SERVICE_URL=$(kubectl get ingress plant-disease-ingress \
+          -n plant-disease-prod -o jsonpath='{.spec.rules[0].host}')
+        
+        # Health check
+        for i in {1..60}; do
+          if curl -f https://$SERVICE_URL/api/v1/health; then
+            echo "Production service is healthy"
+            break
+          fi
+          echo "Waiting for production service... attempt $i"
+          sleep 10
+        done
+        
+        # Run production smoke tests
+        python -m pytest tests/smoke/production_tests.py \
+          --base-url=https://$SERVICE_URL \
+          -v
+    
+    - name: Update monitoring dashboards
+      run: |
+        # Trigger monitoring system to update dashboards
+        curl -X POST "${{ secrets.MONITORING_WEBHOOK_URL }}" \
+          -H "Content-Type: application/json" \
+          -d '{"event": "deployment", "service": "plant-disease-backend", "version": "${{ needs.build-image.outputs.image-tag }}"}'
+    
+    - name: Notify deployment success
+      uses: 8398a7/action-slack@v3
+      if: success()
+      with:
+        status: success
+        channel: '#deployments'
+        text: |
+          🚀 Plant Disease Detection deployed to production!
+          Image: `${{ needs.build-image.outputs.image-tag }}`
+          Commit: `${{ github.sha }}`
+          Deployed by: `${{ github.actor }}`
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Rollback on Failure
+  rollback-on-failure:
+    name: Rollback on Deployment Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-production, deploy-staging]
+    if: |
+      always() && 
+      (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure')
+    
+    steps:
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Configure kubectl
+      run: |
+        if [ "${{ needs.deploy-production.result }}" == "failure" ]; then
+          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+          NAMESPACE="plant-disease-prod"
+        else
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+          NAMESPACE="plant-disease-staging"
+        fi
+        export KUBECONFIG=kubeconfig
+    
+    - name: Rollback deployment
+      run: |
+        export KUBECONFIG=kubeconfig
+        
+        echo "Rolling back deployment in namespace: $NAMESPACE"
+        
+        # Rollback to previous revision
+        kubectl rollout undo deployment/plant-disease-backend \
+          -n $NAMESPACE
+        
+        # Wait for rollback to complete
+        kubectl rollout status deployment/plant-disease-backend \
+          -n $NAMESPACE --timeout=300s
+    
+    - name: Notify rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#deployments'
+        text: |
+          🚨 Plant Disease Detection deployment failed and was rolled back!
+          Environment: `${{ github.ref_name }}`
+          Commit: `${{ github.sha }}`
+          Deployed by: `${{ github.actor }}`
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Security Scan and Compliance
+  security-compliance:
+    name: Security & Compliance
+    runs-on: ubuntu-latest
+    needs: [build-image]
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run container security scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-image.outputs.image-digest }}
+        format: 'sarif'
+        output: 'trivy-container.sarif'
+    
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+    
+    - name: Upload security artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-scan-results
+        path: |
+          trivy-container.sarif
+          snyk-results.json
+        retention-days: 30
+
+  # Performance Regression Tests
+  performance-regression:
+    name: Performance Regression
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: needs.deploy-staging.result == 'success'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install locust pytest-benchmark
+        pip install -e .
+    
+    - name: Run performance regression tests
+      env:
+        STAGING_URL: ${{ secrets.STAGING_URL }}
+      run: |
+        # Run comprehensive performance tests
+        python -m pytest tests/performance/regression_tests.py \
+          --base-url=$STAGING_URL \
+          --benchmark-json=performance-results.json \
+          -v
+    
+    - name: Compare with baseline
+      run: |
+        python scripts/compare_performance.py \
+          --current=performance-results.json \
+          --baseline=tests/performance/baseline.json \
+          --threshold=10
+    
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-regression-results
+        path: performance-results.json
+        retention-days: 30

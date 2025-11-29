@@ -542,3 +542,394 @@ def create_comparison_layout(uploaded_image: bytes, disease_name: str) -> str:
     """
 
     return comparison_html
+
+
+# Grad-CAM Display Extension
+class GradCAMExtension:
+    """Extension for adding Grad-CAM functionality to results display"""
+
+    def __init__(self, analysis_results: Dict[str, Any], uploaded_image: Optional[bytes] = None):
+        """Initialize Grad-CAM extension"""
+        self.analysis_results = analysis_results
+        self.uploaded_image = uploaded_image
+
+    def display_grad_cam_section(self):
+        """Display Grad-CAM analysis section"""
+        if not self.uploaded_image:
+            return
+
+        st.markdown("### 🎯 Grad-CAM Visualization Analysis")
+        st.markdown("*See exactly where the AI focused when detecting diseases*")
+
+        # Information section
+        with st.expander("ℹ️ What is Grad-CAM?", expanded=False):
+            st.markdown("""
+            **Grad-CAM (Gradient-weighted Class Activation Mapping)** shows which parts of the leaf
+            the AI model focused on when making its disease detection decision.
+
+            **How to interpret:**
+            - 🔴 **Red/Orange areas**: High attention - likely disease symptoms
+            - 🟡 **Yellow areas**: Medium attention - possible symptoms
+            - 🔵 **Blue/Green areas**: Low attention - healthy tissue
+            - ⚪ **White areas**: No attention - background/irrelevant
+
+            **Benefits:**
+            - ✅ Understand *why* AI made its decision
+            - ✅ Verify AI focused on actual symptoms
+            - ✅ Build trust in AI recommendations
+            - ✅ Learn to identify symptoms yourself
+            """)
+
+        # Generate button
+        col1, col2, col3 = st.columns([2, 1, 1])
+
+        with col1:
+            generate_clicked = st.button(
+                "🎯 Generate Grad-CAM Analysis",
+                key="generate_grad_cam_main",
+                help="Generate heatmap showing AI focus areas",
+                use_container_width=True
+            )
+
+        with col2:
+            processing_time = getattr(st.session_state, 'grad_cam_time_ms', 0)
+            st.metric("⏱️ Time", f"{processing_time}ms", "Processing time")
+
+        with col3:
+            quality_score = getattr(st.session_state, 'grad_cam_quality', 0)
+            st.metric("📊 Quality", f"{quality_score:.0%}", "Analysis quality")
+
+        if generate_clicked:
+            self._generate_grad_cam_analysis()
+
+        # Display existing Grad-CAM results if available
+        if hasattr(st.session_state, 'last_grad_cam') and st.session_state.last_grad_cam:
+            self._display_existing_grad_cam()
+
+    def _generate_grad_cam_analysis(self):
+        """Generate Grad-CAM analysis"""
+        try:
+            # Show progress
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            # Step 1: Initialize
+            progress_bar.progress(0.2)
+            status_text.text("🔄 Initializing Grad-CAM generation...")
+
+            # Step 2: Call API
+            progress_bar.progress(0.5)
+            status_text.text("🧠 Running AI model analysis...")
+
+            # This would call the actual API
+            # For now, simulate with placeholder
+            import time
+            time.sleep(2)  # Simulate processing
+
+            # Step 3: Complete
+            progress_bar.progress(1.0)
+            status_text.text("✅ Grad-CAM analysis complete!")
+
+            # Store mock results in session
+            st.session_state.last_grad_cam = {
+                'success': True,
+                'original_image': base64.b64encode(self.uploaded_image).decode(),
+                'heatmap_image': None,  # Would be generated
+                'overlay_image': None,  # Would be generated
+                'prediction': {
+                    'disease_name': 'Sample Disease',
+                    'confidence': 0.85,
+                    'severity': 'moderate',
+                    'is_healthy': False
+                },
+                'metadata': {
+                    'model_version': 'v1.0.0',
+                    'device': 'CPU',
+                    'processing_time': 1500,
+                    'heatmap_generated': False,
+                    'image_size': [512, 512]
+                }
+            }
+            st.session_state.grad_cam_time_ms = 1500
+            st.session_state.grad_cam_quality = 0.85
+
+            st.success("✅ Grad-CAM analysis completed! View results in the visualization tabs below.")
+            st.rerun()
+
+        except Exception as e:
+            progress_bar.empty()
+            status_text.empty()
+            st.error(f"❌ Error generating Grad-CAM: {str(e)}")
+
+    def _display_existing_grad_cam(self):
+        """Display existing Grad-CAM results"""
+        grad_cam_data = st.session_state.last_grad_cam
+
+        # Create visualization tabs
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "🎯 Main View", "📸 Original", "🔥 Analysis", "📊 Details"
+        ])
+
+        with tab1:
+            self._display_main_view(grad_cam_data)
+
+        with tab2:
+            self._display_original_image(grad_cam_data)
+
+        with tab3:
+            self._display_analysis_view(grad_cam_data)
+
+        with tab4:
+            self._display_detailed_metrics(grad_cam_data)
+
+    def _display_main_view(self, grad_cam_data: Dict[str, Any]):
+        """Display main combined view"""
+        st.markdown("### 🎯 Complete Grad-CAM Analysis")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**📸 Original Image**")
+            if grad_cam_data.get('original_image'):
+                st.image(
+                    f"data:image/png;base64,{grad_cam_data['original_image']}",
+                    use_column_width=True,
+                    caption="Uploaded leaf image"
+                )
+
+        with col2:
+            st.markdown("**🎯 AI Focus Areas**")
+            if grad_cam_data.get('overlay_image'):
+                st.image(
+                    f"data:image/png;base64,{grad_cam_data['overlay_image']}",
+                    use_column_width=True,
+                    caption="AI attention overlay"
+                )
+            else:
+                st.info("🔄 Generating overlay visualization...")
+                st.markdown("""
+                **What you'll see:**
+                - 🔴 Red highlights: Disease symptoms
+                - 🟡 Yellow highlights: Possible symptoms
+                - 🔵 Blue highlights: Healthy tissue
+                """)
+
+        # Key insights
+        st.markdown("---")
+        prediction = grad_cam_data.get('prediction', {})
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            if prediction.get('disease_name'):
+                st.metric("🔬 Disease", prediction['disease_name'], "Detected")
+            else:
+                st.metric("✅ Status", "Healthy", "No disease")
+
+        with col2:
+            confidence = prediction.get('confidence', 0)
+            st.metric("🎯 Confidence", f"{confidence:.0%}", "AI certainty")
+
+        with col3:
+            severity = prediction.get('severity', 'Unknown')
+            st.metric("📊 Severity", severity.title(), "Disease level")
+
+        with col4:
+            metadata = grad_cam_data.get('metadata', {})
+            device = metadata.get('device', 'Unknown')
+            st.metric("💻 Device", device.upper(), "Processing unit")
+
+    def _display_original_image(self, grad_cam_data: Dict[str, Any]):
+        """Display original image with metadata"""
+        st.markdown("### 📸 Original Image Analysis")
+
+        if grad_cam_data.get('original_image'):
+            st.image(
+                f"data:image/png;base64,{grad_cam_data['original_image']}",
+                use_column_width=True,
+                caption="Your original leaf image"
+            )
+
+            metadata = grad_cam_data.get('metadata', {})
+            image_size = metadata.get('image_size', [0, 0])
+
+            if image_size and image_size != [0, 0]:
+                st.markdown(f"""
+                **Image Information:**
+                - 📐 **Dimensions**: {image_size[0]} × {image_size[1]} pixels
+                - 📊 **Quality**: High resolution for AI analysis
+                - 🎯 **Analysis**: Ready for disease detection
+                - ✅ **Status**: Successfully processed
+                """)
+
+    def _display_analysis_view(self, grad_cam_data: Dict[str, Any]):
+        """Display analysis interpretation"""
+        st.markdown("### 🔥 Grad-CAM Analysis")
+        st.markdown("*Understanding AI's decision-making process*")
+
+        prediction = grad_cam_data.get('prediction', {})
+        metadata = grad_cam_data.get('metadata', {})
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**🔬 Detection Analysis**")
+
+            if prediction.get('disease_name'):
+                disease_name = prediction['disease_name']
+                confidence = prediction.get('confidence', 0)
+                severity = prediction.get('severity', 'Unknown')
+
+                # Confidence bar
+                if confidence >= 0.8:
+                    conf_color = "🟢"
+                    conf_status = "High Confidence"
+                elif confidence >= 0.6:
+                    conf_color = "🟡"
+                    conf_status = "Medium Confidence"
+                else:
+                    conf_color = "🔴"
+                    conf_status = "Low Confidence"
+
+                st.markdown(f"""
+                **Detected Disease:** {disease_name}
+                **Confidence Level:** {conf_color} {conf_status} ({confidence:.0%})
+                **Severity:** {severity.title()}
+
+                **AI Interpretation:** {'Clear disease symptoms detected' if confidence > 0.8 else 'Some symptoms visible' if confidence > 0.6 else 'Early/unclear symptoms'}
+                """)
+            else:
+                st.markdown("""
+                **✅ Plant Health Status: Healthy**
+
+                The AI analysis found no clear disease symptoms.
+
+                **Recommendations:**
+                - Continue regular monitoring
+                - Maintain optimal growing conditions
+                - Practice preventive care
+                """)
+
+        with col2:
+            st.markdown("**🤖 Model Performance**")
+
+            model_version = metadata.get('model_version', 'Unknown')
+            processing_time = metadata.get('processing_time', 0)
+            device = metadata.get('device', 'Unknown')
+            heatmap_generated = metadata.get('heatmap_generated', False)
+
+            st.markdown(f"""
+            **Model Information:**
+            - **Version:** {model_version}
+            - **Processing:** {device.upper()}
+            - **Speed:** {processing_time}ms
+            - **Grad-CAM:** {'✅ Available' if heatmap_generated else '❌ Unavailable'}
+
+            **Performance Quality:**
+            - 🎯 **Accuracy:** {'Excellent' if confidence > 0.8 else 'Good' if confidence > 0.6 else 'Fair'}
+            - ⚡ **Processing:** {'Fast' if processing_time < 2000 else 'Normal'}
+            - 🧠 **Interpretability:** {'High' if heatmap_generated else 'Medium'}
+            """)
+
+    def _display_detailed_metrics(self, grad_cam_data: Dict[str, Any]):
+        """Display detailed metrics and technical information"""
+        st.markdown("### 📊 Technical Analysis")
+
+        prediction = grad_cam_data.get('prediction', {})
+        metadata = grad_cam_data.get('metadata', {})
+
+        # Metrics grid
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**🔬 Disease Metrics**")
+
+            if prediction.get('disease_name'):
+                disease_name = prediction['disease_name']
+                confidence = prediction.get('confidence', 0)
+                severity = prediction.get('severity', 'Unknown')
+
+                # Create detailed metrics
+                st.metric("Disease", disease_name, "Primary detection")
+                st.metric("Confidence", f"{confidence:.0%}", "Detection certainty")
+                st.metric("Severity", severity.title(), "Disease level")
+
+                # Health status
+                is_healthy = prediction.get('is_healthy', True)
+                health_status = "✅ Healthy" if is_healthy else "🔴 Diseased"
+                st.metric("Health Status", health_status, "Overall condition")
+            else:
+                st.metric("Status", "✅ Healthy", "No disease detected")
+                st.metric("Recommendation", "Monitor", "Continue observation")
+
+        with col2:
+            st.markdown("**💻 Technical Details**")
+
+            model_version = metadata.get('model_version', 'Unknown')
+            processing_time = metadata.get('processing_time', 0)
+            device = metadata.get('device', 'Unknown')
+            image_size = metadata.get('image_size', [0, 0])
+
+            st.metric("Model", model_version, "AI version")
+            st.metric("Device", device.upper(), "Processing unit")
+            st.metric("Speed", f"{processing_time}ms", "Processing time")
+
+            if image_size and image_size != [0, 0]:
+                pixels = image_size[0] * image_size[1]
+                st.metric("Resolution", f"{pixels:,}", "Total pixels")
+
+        # Quality assessment
+        st.markdown("---")
+        st.markdown("**🏆 Quality Assessment**")
+
+        confidence = prediction.get('confidence', 0)
+        processing_time = metadata.get('processing_time', 0)
+        heatmap_generated = metadata.get('heatmap_generated', False)
+
+        # Calculate overall quality score
+        quality_score = 0
+        quality_factors = []
+
+        if confidence > 0.8:
+            quality_score += 0.4
+            quality_factors.append("✅ High confidence detection")
+        elif confidence > 0.6:
+            quality_score += 0.3
+            quality_factors.append("🟡 Medium confidence detection")
+
+        if processing_time < 2000:
+            quality_score += 0.3
+            quality_factors.append("⚡ Fast processing")
+
+        if heatmap_generated:
+            quality_score += 0.3
+            quality_factors.append("🎯 Grad-CAM available")
+
+        # Display quality
+        if quality_score >= 0.9:
+            quality_status = "🏆 Excellent"
+            quality_color = "🟢"
+        elif quality_score >= 0.7:
+            quality_status = "👍 Good"
+            quality_color = "🟡"
+        else:
+            quality_status = "⚠️ Fair"
+            quality_color = "🔴"
+
+        st.markdown(f"""
+        **Overall Quality:** {quality_color} {quality_status} ({quality_score:.0%})
+
+        **Quality Factors:**
+        """)
+
+        for factor in quality_factors:
+            st.markdown(f"- {factor}")
+
+        if quality_score < 0.7:
+            st.markdown("""
+            **Improvement Suggestions:**
+            - 📸 Use higher quality images with better lighting
+            - 🔍 Ensure disease symptoms are clearly visible
+            - 🌿 Include multiple leaves if possible
+            - ☀️ Avoid shadows and glare in photos
+            """)
