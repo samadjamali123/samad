@@ -390,6 +390,76 @@ class APIClient:
             logger.error(f"Backend connectivity check: {str(e)}")
             return False, f"Connection error: {str(e)}"
 
+    def generate_grad_cam(self, image_bytes: bytes) -> Dict[str, Any]:
+        """Generate Grad-CAM visualization for disease detection"""
+        try:
+            # Prepare file for upload
+            files = {'image': ('leaf.jpg', io.BytesIO(image_bytes), 'image/jpeg')}
+
+            # Add optional parameters
+            data = {
+                'include_heatmap': True,
+                'include_overlay': True,
+                'include_original': True
+            }
+
+            logger.info(f"Sending image for Grad-CAM analysis, size: {len(image_bytes)} bytes")
+
+            # Make request
+            response = self.session.post(
+                self._build_url("/api/v1/analyze/grad-cam"),
+                files=files,
+                data=data,
+                timeout=self.timeout * 2  # Longer timeout for Grad-CAM processing
+            )
+
+            return self._handle_response(response, "/api/v1/analyze/grad-cam")
+
+        except Exception as e:
+            logger.error(f"Failed to generate Grad-CAM: {str(e)}")
+            return {
+                'success': False,
+                'error': f'Grad-CAM generation failed: {str(e)}',
+                'processing_time_ms': 0
+            }
+
+    async def generate_grad_cam_async(self, image_bytes: bytes) -> Dict[str, Any]:
+        """Async version of Grad-CAM generation"""
+        try:
+            # Use async client if available
+            if hasattr(self, 'async_client'):
+                # Prepare file for async upload
+                files = {'image': ('leaf.jpg', io.BytesIO(image_bytes), 'image/jpeg')}
+
+                # Add optional parameters
+                data = {
+                    'include_heatmap': True,
+                    'include_overlay': True,
+                    'include_original': True
+                }
+
+                logger.info(f"Sending image for async Grad-CAM analysis, size: {len(image_bytes)} bytes")
+
+                # Make async request
+                response = await self.async_client.post(
+                    self._build_url("/api/v1/analyze/grad-cam"),
+                    files=files,
+                    data=data
+                )
+
+                return await self._handle_async_response(response, "/api/v1/analyze/grad-cam")
+            else:
+                # Fallback to sync version
+                return self.generate_grad_cam(image_bytes)
+
+        except Exception as e:
+            logger.error(f"Failed to generate Grad-CAM async: {str(e)}")
+            return {
+                'success': False,
+                'error': f'Async Grad-CAM generation failed: {str(e)}',
+                'processing_time_ms': 0
+            }
+
     def set_timeout(self, timeout: int):
         """Update request timeout"""
         self.timeout = timeout

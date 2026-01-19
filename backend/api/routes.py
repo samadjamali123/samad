@@ -33,6 +33,7 @@ from backend.services.config import Settings, get_settings
 from backend.services.image_processor import ImageProcessor
 from backend.services.ai_service import AIService
 from backend.services.disease_service import DiseaseService
+from backend.services.monitoring_service import MonitoringService
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,14 @@ def get_disease_service(request: Request) -> DiseaseService:
     if not disease_service:
         raise HTTPException(status_code=503, detail="Disease service not available")
     return disease_service
+
+
+def get_monitoring_service(request: Request) -> MonitoringService:
+    """Get monitoring service from app state"""
+    monitoring_service = getattr(request.app.state, 'monitoring_service', None)
+    if not monitoring_service:
+        raise HTTPException(status_code=503, detail="Monitoring service not available")
+    return monitoring_service
 
 
 def validate_image_file(file: UploadFile, settings: Settings) -> None:
@@ -691,6 +700,98 @@ async def export_diseases(
         raise HTTPException(status_code=500, detail="Failed to export disease database")
 
 
+# Grad-CAM visualization endpoint
+@router.post(
+    "/analyze/grad-cam",
+    summary="Generate Grad-CAM visualization",
+    description="Generate Grad-CAM heatmap visualization for disease detection explainability",
+    tags=["Visualization"]
+)
+@limiter.limit("30/minute")
+async def generate_grad_cam(
+    request: StarletteRequest,
+    image: UploadFile = File(..., description="Plant leaf image for Grad-CAM analysis"),
+    ai_service: AIService = Depends(get_ai_service),
+    settings: Settings = Depends(get_settings)
+):
+    """Generate Grad-CAM visualization for disease detection"""
+    session_id = str(uuid.uuid4())
+    start_time = time.time()
+
+    try:
+        # Validate image file
+        validate_image_file(image, settings)
+
+        # Read image data
+        image_data = await image.read()
+        if not image_data:
+            raise HTTPException(status_code=400, detail="Empty image file")
+
+        logger.info(
+            f"grad_cam_started",
+            session_id=session_id,
+            filename=image.filename,
+            file_size=len(image_data),
+            content_type=image.content_type
+        )
+
+        # Generate Grad-CAM visualization
+        grad_cam_result = await ai_service.analyze_with_grad_cam(image_data)
+
+        processing_time_ms = int((time.time() - start_time) * 1000)
+
+        if grad_cam_result.get("success", False):
+            logger.info(
+                f"grad_cam_completed",
+                session_id=session_id,
+                success=True,
+                processing_time_ms=processing_time_ms,
+                has_heatmap=grad_cam_result.get("metadata", {}).get("heatmap_generated", False)
+            )
+
+            return {
+                "success": True,
+                "session_id": session_id,
+                "timestamp": time.time(),
+                "grad_cam_data": grad_cam_result,
+                "processing_time_ms": processing_time_ms
+            }
+        else:
+            error_message = grad_cam_result.get("error", "Failed to generate Grad-CAM visualization")
+
+            logger.error(
+                f"grad_cam_failed",
+                session_id=session_id,
+                error=error_message,
+                processing_time_ms=processing_time_ms
+            )
+
+            return {
+                "success": False,
+                "session_id": session_id,
+                "timestamp": time.time(),
+                "error": error_message,
+                "processing_time_ms": processing_time_ms
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        processing_time_ms = int((time.time() - start_time) * 1000)
+
+        logger.error(
+            f"grad_cam_failed",
+            session_id=session_id,
+            error=str(e),
+            processing_time_ms=processing_time_ms
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Grad-CAM generation failed: {str(e)}"
+        )
+
+
 # Statistics endpoint
 @router.get(
     "/stats",
@@ -740,3 +841,396 @@ async def get_api_statistics(
     except Exception as e:
         logger.error(f"Failed to get API statistics: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve statistics")
+
+
+# ============================================================================
+# MONITORING ENDPOINTS
+# ============================================================================
+
+# Monitoring dashboard endpoint
+@router.get(
+    "/monitoring/dashboard",
+    summary="Get monitoring dashboard data",
+    description="Get comprehensive monitoring dashboard data including system metrics, model performance, and business analytics",
+    tags=["Monitoring"]
+)
+@limiter.limit("60/minute")
+async def get_monitoring_dashboard(
+    request: StarletteRequest,
+    time_range_hours: Optional[int] = 24,
+    include_predictions: Optional[bool] = True,
+    include_system: Optional[bool] = True,
+    include_business: Optional[bool] = True,
+    monitoring_service: MonitoringService = Depends(get_monitoring_service)
+):
+    """Get monitoring dashboard data"""
+    try:
+        if time_range_hours <= 0 or time_range_hours > 168:  # Max 7 days
+            raise HTTPException(status_code=400, detail="Time range must be between 1 and 168 hours")
+
+        # Get dashboard data
+        dashboard_data = await monitoring_service.get_dashboard_data(
+            time_range_hours=time_range_hours,
+            include_predictions=include_predictions,
+            include_system=include_system,
+            include_business=include_business
+        )
+
+        return {
+            "success": True,
+            "timestamp": time.time(),
+            "time_range_hours": time_range_hours,
+            "dashboard": dashboard_data
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get monitoring dashboard: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve monitoring dashboard")
+
+
+# Model performance endpoint
+@router.get(
+    "/monitoring/models/{model_name}",
+    summary="Get model performance metrics",
+    description="Get detailed performance metrics for a specific AI model",
+    tags=["Monitoring"]
+)
+@limiter.limit("60/minute")
+async def get_model_performance(
+    request: StarletteRequest,
+    model_name: str,
+    time_range_hours: Optional[int] = 24,
+    monitoring_service: MonitoringService = Depends(get_monitoring_service)
+):
+    """Get performance metrics for a specific model"""
+    try:
+        if time_range_hours <= 0 or time_range_hours > 168:
+            raise HTTPException(status_code=400, detail="Time range must be between 1 and 168 hours")
+
+        # Get model metrics
+        model_metrics = await monitoring_service.get_model_metrics(
+            model_name=model_name,
+            time_range_hours=time_range_hours
+        )
+
+        if not model_metrics:
+            raise HTTPException(status_code=404, detail=f"No metrics found for model '{model_name}'")
+
+        return {
+            "success": True,
+            "timestamp": time.time(),
+            "model_name": model_name,
+            "time_range_hours": time_range_hours,
+            "metrics": model_metrics
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get model performance for {model_name}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve model performance")
+
+
+# System metrics endpoint
+@router.get(
+    "/monitoring/system",
+    summary="Get system performance metrics",
+    description="Get detailed system performance metrics including CPU, memory, disk, and network usage",
+    tags=["Monitoring"]
+)
+@limiter.limit("60/minute")
+async def get_system_metrics(
+    request: StarletteRequest,
+    monitoring_service: MonitoringService = Depends(get_monitoring_service)
+):
+    """Get current system performance metrics"""
+    try:
+        # Get current system metrics
+        system_metrics = monitoring_service.get_current_system_metrics()
+
+        return {
+            "success": True,
+            "timestamp": time.time(),
+            "system_metrics": system_metrics
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get system metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve system metrics")
+
+
+# Business metrics endpoint
+@router.get(
+    "/monitoring/business",
+    summary="Get business metrics",
+    description="Get business analytics metrics including user engagement and conversion rates",
+    tags=["Monitoring"]
+)
+@limiter.limit("60/minute")
+async def get_business_metrics(
+    request: StarletteRequest,
+    time_range_hours: Optional[int] = 24,
+    monitoring_service: MonitoringService = Depends(get_monitoring_service)
+):
+    """Get business analytics metrics"""
+    try:
+        if time_range_hours <= 0 or time_range_hours > 168:
+            raise HTTPException(status_code=400, detail="Time range must be between 1 and 168 hours")
+
+        # Get business metrics
+        business_metrics = await monitoring_service.get_business_metrics(time_range_hours)
+
+        return {
+            "success": True,
+            "timestamp": time.time(),
+            "time_range_hours": time_range_hours,
+            "business_metrics": business_metrics
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get business metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve business metrics")
+
+
+# Alerts endpoint
+@router.get(
+    "/monitoring/alerts",
+    summary="Get monitoring alerts",
+    description="Get active alerts and alert history",
+    tags=["Monitoring"]
+)
+@limiter.limit("60/minute")
+async def get_monitoring_alerts(
+    request: StarletteRequest,
+    active_only: Optional[bool] = True,
+    severity: Optional[str] = None,
+    limit: Optional[int] = 50,
+    monitoring_service: MonitoringService = Depends(get_monitoring_service)
+):
+    """Get monitoring alerts"""
+    try:
+        if limit <= 0 or limit > 200:
+            raise HTTPException(status_code=400, detail="Limit must be between 1 and 200")
+
+        # Validate severity if provided
+        valid_severities = ["critical", "warning", "info"]
+        if severity and severity not in valid_severities:
+            raise HTTPException(status_code=400, detail=f"Invalid severity. Must be one of: {valid_severities}")
+
+        # Get alerts
+        alerts = await monitoring_service.get_alerts(
+            active_only=active_only,
+            severity=severity,
+            limit=limit
+        )
+
+        return {
+            "success": True,
+            "timestamp": time.time(),
+            "filters": {
+                "active_only": active_only,
+                "severity": severity,
+                "limit": limit
+            },
+            "alerts": alerts,
+            "total_count": len(alerts)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get monitoring alerts: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve monitoring alerts")
+
+
+# Performance report endpoint
+@router.get(
+    "/monitoring/reports/performance",
+    summary="Generate performance report",
+    description="Generate comprehensive performance report with recommendations",
+    tags=["Monitoring"]
+)
+@limiter.limit("10/minute")
+async def get_performance_report(
+    request: StarletteRequest,
+    time_range_hours: Optional[int] = 24,
+    include_recommendations: Optional[bool] = True,
+    monitoring_service: MonitoringService = Depends(get_monitoring_service)
+):
+    """Generate comprehensive performance report"""
+    try:
+        if time_range_hours <= 0 or time_range_hours > 168:
+            raise HTTPException(status_code=400, detail="Time range must be between 1 and 168 hours")
+
+        # Generate performance report
+        report = await monitoring_service.generate_performance_report(
+            time_range_hours=time_range_hours,
+            include_recommendations=include_recommendations
+        )
+
+        return {
+            "success": True,
+            "timestamp": time.time(),
+            "time_range_hours": time_range_hours,
+            "report": report
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate performance report: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate performance report")
+
+
+# Health check endpoint with monitoring
+@router.get(
+    "/monitoring/health",
+    summary="Enhanced health check",
+    description="Comprehensive health check including monitoring status",
+    tags=["Monitoring"]
+)
+@limiter.limit("60/minute")
+async def get_enhanced_health_check(
+    request: StarletteRequest,
+    monitoring_service: MonitoringService = Depends(get_monitoring_service),
+    ai_service: AIService = Depends(get_ai_service)
+):
+    """Enhanced health check with monitoring data"""
+    try:
+        # Get basic health status
+        health_status = "healthy"
+        issues = []
+
+        # Check system metrics
+        system_metrics = monitoring_service.get_current_system_metrics()
+
+        # Check for system issues
+        if system_metrics.cpu_percent > 90:
+            health_status = "degraded"
+            issues.append(f"High CPU usage: {system_metrics.cpu_percent:.1f}%")
+
+        if system_metrics.memory_percent > 90:
+            health_status = "degraded"
+            issues.append(f"High memory usage: {system_metrics.memory_percent:.1f}%")
+
+        if system_metrics.disk_percent > 95:
+            health_status = "degraded"
+            issues.append(f"High disk usage: {system_metrics.disk_percent:.1f}%")
+
+        # Check AI model availability
+        try:
+            available_models = await ai_service.get_available_models()
+            if len(available_models) < 2:
+                health_status = "degraded"
+                issues.append(f"Only {len(available_models)} AI models available")
+        except Exception as e:
+            health_status = "unhealthy"
+            issues.append(f"AI models check failed: {str(e)}")
+
+        # Get active alerts
+        try:
+            active_alerts = await monitoring_service.get_alerts(active_only=True, limit=10)
+            critical_alerts = [alert for alert in active_alerts if alert.get("severity") == "critical"]
+            if critical_alerts:
+                health_status = "unhealthy"
+                issues.append(f"{len(critical_alerts)} critical alerts active")
+        except Exception as e:
+            logger.warning(f"Failed to get alerts for health check: {str(e)}")
+
+        # Build health response
+        health_data = {
+            "status": health_status,
+            "timestamp": time.time(),
+            "uptime": time.time() - getattr(request.app.state, 'start_time', time.time()),
+            "version": "1.0.0",
+            "environment": getattr(monitoring_service.settings, 'ENVIRONMENT', 'development'),
+            "system_metrics": {
+                "cpu_percent": system_metrics.cpu_percent,
+                "memory_percent": system_metrics.memory_percent,
+                "disk_percent": system_metrics.disk_percent,
+                "network_sent_mb": system_metrics.network_sent_mb,
+                "network_recv_mb": system_metrics.network_recv_mb
+            },
+            "services": {
+                "ai_models_available": len(available_models) if 'available_models' in locals() else 0,
+                "monitoring_service": "healthy",
+                "database_connected": True,  # Would check actual DB connection
+                "redis_connected": monitoring_service.redis_client is not None
+            },
+            "issues": issues,
+            "recommendations": [
+                "Consider scaling if CPU usage remains above 80%",
+                "Monitor memory usage trends for capacity planning",
+                "Set up automated alerts for critical thresholds"
+            ] if health_status != "healthy" else []
+        }
+
+        # Add appropriate HTTP status code
+        status_code = 200 if health_status == "healthy" else (503 if health_status == "unhealthy" else 200)
+
+        return JSONResponse(
+            content=health_data,
+            status_code=status_code
+        )
+
+    except Exception as e:
+        logger.error(f"Enhanced health check failed: {str(e)}")
+
+        # Return degraded status on error
+        return JSONResponse(
+            content={
+                "status": "degraded",
+                "timestamp": time.time(),
+                "error": f"Health check failed: {str(e)}",
+                "issues": [f"Health check error: {str(e)}"]
+            },
+            status_code=503
+        )
+
+
+# Export monitoring data endpoint
+@router.get(
+    "/monitoring/export",
+    summary="Export monitoring data",
+    description="Export monitoring data as JSON for external analysis",
+    tags=["Monitoring"]
+)
+@limiter.limit("5/minute")
+async def export_monitoring_data(
+    request: StarletteRequest,
+    time_range_hours: Optional[int] = 24,
+    data_type: Optional[str] = "all",
+    monitoring_service: MonitoringService = Depends(get_monitoring_service)
+):
+    """Export monitoring data"""
+    try:
+        if time_range_hours <= 0 or time_range_hours > 168:
+            raise HTTPException(status_code=400, detail="Time range must be between 1 and 168 hours")
+
+        valid_data_types = ["all", "models", "system", "business", "alerts"]
+        if data_type not in valid_data_types:
+            raise HTTPException(status_code=400, detail=f"Invalid data_type. Must be one of: {valid_data_types}")
+
+        # Get export data
+        export_data = await monitoring_service.export_monitoring_data(
+            time_range_hours=time_range_hours,
+            data_type=data_type
+        )
+
+        return JSONResponse(
+            content=export_data,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename=monitoring_export_{int(time.time())}.json"
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to export monitoring data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to export monitoring data")

@@ -27,6 +27,9 @@ from backend.models.analysis import (
 )
 from backend.models.disease import Disease
 from backend.services.config import Settings
+from backend.models.plant_classifier import PlantClassifier, PlantClassifierInference, create_plant_classifier
+from backend.models.disease_detector import DiseaseDetector, DiseaseDetectorInference, create_disease_detector
+from backend.models.ensemble_predictor import EnsemblePredictor, EnsembleMethod, create_ensemble_predictor
 
 logger = logging.getLogger(__name__)
 
@@ -442,11 +445,250 @@ class AIService:
                 "processing_time_ms": 0
             }
 
+    async def analyze_with_local_models(self, image: Union[bytes, Image.Image]) -> List[AIModelResult]:
+        """Analyze image with local models only"""
+        results = []
+
+        # Plant classification with local model
+        if self.plant_classifier:
+            try:
+                start_time = time.time()
+
+                # Create inference wrapper
+                if not hasattr(self.plant_classifier, 'predict'):
+                    from backend.models.plant_classifier import PlantClassifierInference
+                    plant_classifier_inference = PlantClassifierInference(
+                        model=self.plant_classifier,
+                        device='cpu',
+                        confidence_threshold=self.settings.MIN_PLANT_CONFIDENCE
+                    )
+                else:
+                    plant_classifier_inference = self.plant_classifier
+
+                # Get prediction
+                plant_result = plant_classifier_inference.predict_image(image, top_k=5)
+
+                processing_time_ms = int((time.time() - start_time) * 1000)
+
+                if plant_result['predictions']:
+                    top_prediction = plant_result['predictions'][0]
+
+                    plant_identification = PlantIdentification(
+                        plant_name=top_prediction['species'],
+                        confidence=top_prediction['confidence'],
+                        scientific_name=top_prediction.get('scientific_name'),
+                        alternative_identifications=[
+                            {
+                                "plant_name": alt.get('species'),
+                                "confidence": alt.get('confidence'),
+                                "scientific_name": alt.get('scientific_name')
+                            }
+                            for alt in plant_result['top_k_predictions'][1:4]
+                        ],
+                        model_used=AIModelType.PLANT_CLASSIFIER,
+                        processing_time_ms=processing_time_ms
+                    )
+
+                    results.append(AIModelResult(
+                        model_type=AIModelType.PLANT_CLASSIFIER,
+                        plant_identification=plant_identification,
+                        disease_identification=None,
+                        raw_response=plant_result,
+                        success=True,
+                        processing_time_ms=processing_time_ms,
+                        timestamp=time.time()
+                    ))
+                else:
+                    # No predictions returned
+                    results.append(AIModelResult(
+                        model_type=AIModelType.PLANT_CLASSIFIER,
+                        plant_identification=None,
+                        disease_identification=None,
+                        raw_response=plant_result,
+                        success=False,
+                        error_message="No plant predictions returned",
+                        processing_time_ms=processing_time_ms,
+                        timestamp=time.time()
+                    ))
+
+                logger.info(f"Local plant classification completed in {processing_time_ms}ms")
+
+            except Exception as e:
+                processing_time_ms = int((time.time() - start_time) * 1000) if 'start_time' in locals() else 0
+                logger.error(f"Local plant classification failed: {str(e)}")
+                results.append(AIModelResult(
+                    model_type=AIModelType.PLANT_CLASSIFIER,
+                    plant_identification=None,
+                    disease_identification=None,
+                    raw_response=None,
+                    success=False,
+                    error_message=str(e),
+                    processing_time_ms=processing_time_ms,
+                    timestamp=time.time()
+                ))
+
+        # Disease detection with local model
+        if self.disease_detector:
+            try:
+                start_time = time.time()
+
+                # Create inference wrapper
+                if not hasattr(self.disease_detector, 'predict'):
+                    from backend.models.disease_detector import DiseaseDetectorInference
+                    disease_detector_inference = DiseaseDetectorInference(
+                        model=self.disease_detector,
+                        device='cpu',
+                        confidence_threshold=self.settings.MIN_DISEASE_CONFIDENCE
+                    )
+                else:
+                    disease_detector_inference = self.disease_detector
+
+                # Get prediction with Grad-CAM
+                disease_result = disease_detector_inference.predict_image(image, generate_grad_cam=True)
+
+                processing_time_ms = int((time.time() - start_time) * 1000)
+
+                if disease_result['detections']:
+                    top_detection = disease_result['detections'][0]
+
+                    disease_identification = DiseaseIdentification(
+                        disease_name=top_detection['disease'],
+                        confidence=top_detection['confidence'],
+                        disease_id=None,  # Will be resolved by ensemble
+                        symptoms_detected=[],  # Will be extracted from image processing
+                        severity=top_detection.get('severity'),
+                        scientific_name=f"{top_detection['disease']} pathogen" if top_detection['disease'] != 'healthy' else "Healthy plant",
+                        model_used=AIModelType.DISEASE_DETECTOR,
+                        processing_time_ms=processing_time_ms
+                    )
+
+                    results.append(AIModelResult(
+                        model_type=AIModelType.DISEASE_DETECTOR,
+                        plant_identification=None,
+                        disease_identification=disease_identification,
+                        raw_response=disease_result,
+                        success=True,
+                        processing_time_ms=processing_time_ms,
+                        timestamp=time.time()
+                    ))
+                else:
+                    # No detections returned
+                    results.append(AIModelResult(
+                        model_type=AIModelType.DISEASE_DETECTOR,
+                        plant_identification=None,
+                        disease_identification=None,
+                        raw_response=disease_result,
+                        success=False,
+                        error_message="No disease detections returned",
+                        processing_time_ms=processing_time_ms,
+                        timestamp=time.time()
+                    ))
+
+                logger.info(f"Local disease detection completed in {processing_time_ms}ms")
+
+            except Exception as e:
+                processing_time_ms = int((time.time() - start_time) * 1000) if 'start_time' in locals() else 0
+                logger.error(f"Local disease detection failed: {str(e)}")
+                results.append(AIModelResult(
+                    model_type=AIModelType.DISEASE_DETECTOR,
+                    plant_identification=None,
+                    disease_identification=None,
+                    raw_response=None,
+                    success=False,
+                    error_message=str(e),
+                    processing_time_ms=processing_time_ms,
+                    timestamp=time.time()
+                ))
+
+        # Ensemble prediction with all models
+        if self.ensemble_predictor and (self.plant_classifier or self.disease_detector):
+            try:
+                start_time = time.time()
+
+                # Use ensemble predictor for combined results
+                ensemble_prediction = await self.ensemble_predictor.predict_with_all_models(image, self)
+
+                processing_time_ms = int((time.time() - start_time) * 1000)
+
+                # Convert ensemble prediction to AI model result
+                ensemble_plant_identification = None
+                ensemble_disease_identification = None
+
+                if ensemble_prediction.plant_name:
+                    ensemble_plant_identification = PlantIdentification(
+                        plant_name=ensemble_prediction.plant_name,
+                        confidence=ensemble_prediction.plant_confidence,
+                        scientific_name=None,  # Could be mapped from plant database
+                        alternative_identifications=[
+                            {
+                                "plant_name": alt[0],
+                                "confidence": alt[1],
+                                "scientific_name": None
+                            }
+                            for alt in ensemble_prediction.plant_alternatives
+                        ],
+                        model_used=AIModelType.ENSEMBLE,
+                        processing_time_ms=processing_time_ms
+                    )
+
+                if ensemble_prediction.disease_name:
+                    ensemble_disease_identification = DiseaseIdentification(
+                        disease_name=ensemble_prediction.disease_name,
+                        confidence=ensemble_prediction.disease_confidence,
+                        disease_id=None,  # Will be resolved by disease service
+                        symptoms_detected=[],  # Will be extracted from image processing
+                        severity=ensemble_prediction.severity_level,
+                        scientific_name=f"{ensemble_prediction.disease_name}" if ensemble_prediction.disease_name != 'healthy' else "Healthy plant",
+                        model_used=AIModelType.ENSEMBLE,
+                        processing_time_ms=processing_time_ms
+                    )
+
+                # Add ensemble result
+                results.append(AIModelResult(
+                    model_type=AIModelType.ENSEMBLE,
+                    plant_identification=ensemble_plant_identification,
+                    disease_identification=ensemble_disease_identification,
+                    raw_response=ensemble_prediction.__dict__,
+                    success=True,
+                    processing_time_ms=processing_time_ms,
+                    timestamp=time.time()
+                ))
+
+                logger.info(f"Local ensemble prediction completed in {processing_time_ms}ms")
+
+            except Exception as e:
+                processing_time_ms = int((time.time() - start_time) * 1000) if 'start_time' in locals() else 0
+                logger.error(f"Local ensemble prediction failed: {str(e)}")
+                results.append(AIModelResult(
+                    model_type=AIModelType.ENSEMBLE,
+                    plant_identification=None,
+                    disease_identification=None,
+                    raw_response=None,
+                    success=False,
+                    error_message=str(e),
+                    processing_time_ms=processing_time_ms,
+                    timestamp=time.time()
+                ))
+
+        return results
+
     async def analyze_with_all_models(self, image: Union[bytes, Image.Image]) -> List[AIModelResult]:
-        """Analyze image with all available AI models concurrently"""
+        """Analyze image with all available AI models including local models"""
+        local_results = await self.analyze_with_local_models(image)
+        external_results = await self.analyze_with_external_models(image)
+
+        # Combine all results
+        all_results = local_results + external_results
+
+        logger.info(f"Total analysis completed: {len(local_results)} local, {len(external_results)} external models")
+
+        return all_results
+
+    async def analyze_with_external_models(self, image: Union[bytes, Image.Image]) -> List[AIModelResult]:
+        """Analyze image with external API models only"""
         tasks = []
 
-        # Create concurrent tasks for enabled models
+        # Create concurrent tasks for enabled external models
         if self.model_configs[AIModelType.GROK].enabled:
             tasks.append(self.analyze_with_grok(image))
 
@@ -463,11 +705,118 @@ class AIService:
         model_results = []
         for result in results:
             if isinstance(result, Exception):
-                logger.error(f"Model analysis failed: {str(result)}")
+                logger.error(f"External model analysis failed: {str(result)}")
             else:
                 model_results.append(result)
 
         return model_results
+
+    async def analyze_with_grad_cam(self, image: Union[bytes, Image.Image]) -> Dict[str, Any]:
+        """Generate Grad-CAM visualization for disease detection"""
+        try:
+            # Initialize disease detector if not available
+            if not hasattr(self, 'disease_detector') or self.disease_detector is None:
+                return {"success": False, "error": "Disease detector model not available"}
+
+            # Convert PIL Image to bytes if needed
+            if isinstance(image, bytes):
+                pil_image = Image.open(io.BytesIO(image))
+            else:
+                pil_image = image
+
+            # Initialize disease detector inference
+            from backend.models.disease_detector import DiseaseDetectorInference
+            disease_detector_inference = DiseaseDetectorInference(
+                model_path=getattr(self.settings, 'LOCAL_DISEASE_MODEL_PATH', 'models/disease_detector.pth'),
+                device=getattr(self.settings, 'TORCH_DEVICE', 'cpu')
+            )
+
+            # Generate prediction with Grad-CAM
+            result = disease_detector_inference.predict_image(
+                pil_image,
+                top_k_diseases=1,
+                confidence_threshold=0.0,  # Get prediction even if low confidence
+                generate_grad_cam=True
+            )
+
+            if result.success and result.grad_cam_heatmap is not None:
+                # Convert Grad-CAM heatmap to base64 for JSON serialization
+                heatmap_pil = result.grad_cam_heatmap
+
+                # Resize heatmap to match original image dimensions
+                heatmap_resized = heatmap_pil.resize(pil_image.size, Image.LANCZOS)
+
+                # Create overlay visualization
+                import cv2
+                import numpy as np
+
+                # Convert images to numpy arrays
+                original_np = np.array(pil_image.convert('RGB'))
+                heatmap_np = np.array(heatmap_resized)
+
+                # Apply colormap to heatmap
+                heatmap_colored = cv2.applyColorMap(heatmap_np, cv2.COLORMAP_JET)
+
+                # Blend original image with heatmap
+                alpha = 0.6  # Transparency factor
+                overlay = cv2.addWeighted(original_np, 1 - alpha, heatmap_colored, alpha, 0)
+
+                # Convert overlay back to PIL Image
+                overlay_pil = Image.fromarray(overlay)
+
+                # Convert both images to base64
+                def image_to_base64(img):
+                    buffer = io.BytesIO()
+                    img.save(buffer, format='PNG')
+                    return base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+                # Encode original image
+                original_base64 = image_to_base64(pil_image)
+
+                # Encode heatmap
+                heatmap_base64 = image_to_base64(heatmap_resized)
+
+                # Encode overlay
+                overlay_base64 = image_to_base64(overlay_pil)
+
+                # Get prediction details
+                prediction_details = {}
+                if result.disease_predictions:
+                    pred = result.disease_predictions[0]
+                    prediction_details = {
+                        "disease_name": pred.class_name,
+                        "confidence": pred.confidence,
+                        "severity": pred.severity_prediction,
+                        "is_healthy": pred.class_name.lower() == 'healthy'
+                    }
+
+                return {
+                    "success": True,
+                    "original_image": original_base64,
+                    "heatmap_image": heatmap_base64,
+                    "overlay_image": overlay_base64,
+                    "prediction": prediction_details,
+                    "metadata": {
+                        "model_version": result.model_version,
+                        "device": result.device_used,
+                        "processing_time": result.processing_time,
+                        "heatmap_generated": True,
+                        "image_size": pil_image.size
+                    }
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Failed to generate Grad-CAM visualization",
+                    "details": result.error_message if hasattr(result, 'error_message') else "Unknown error"
+                }
+
+        except Exception as e:
+            logger.error(f"Grad-CAM generation failed: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Grad-CAM generation error: {str(e)}"
+            }
 
     async def analyze_with_grok(self, image: Union[bytes, Image.Image]) -> AIModelResult:
         """Analyze image specifically with Grok AI"""

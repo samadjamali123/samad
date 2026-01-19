@@ -25,6 +25,7 @@ from backend.services.config import Settings, get_settings
 from backend.services.disease_service import DiseaseService
 from backend.services.image_processor import ImageProcessor
 from backend.services.ai_service import AIService
+from backend.services.monitoring_service import MonitoringService
 from backend.api.routes import router as api_router
 from backend.utils.logging import setup_logging
 
@@ -32,16 +33,17 @@ from backend.utils.logging import setup_logging
 disease_service: Optional[DiseaseService] = None
 image_processor: Optional[ImageProcessor] = None
 ai_service: Optional[AIService] = None
+monitoring_service: Optional[MonitoringService] = None
 settings: Optional[Settings] = None
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager"""
-    global disease_service, image_processor, ai_service, settings
+    
+    global disease_service, image_processor, ai_service, monitoring_service, settings
 
-    # Startup
+    
     logger.info("Starting Plant Leaf Disease Detector API...")
 
     try:
@@ -61,11 +63,17 @@ async def lifespan(app: FastAPI):
         await ai_service.initialize()
         logger.info("AI service initialized")
 
+        monitoring_service = MonitoringService(settings)
+        await monitoring_service.initialize()
+        logger.info("Monitoring service initialized")
+
         # Store services in app state
         app.state.disease_service = disease_service
         app.state.image_processor = image_processor
         app.state.ai_service = ai_service
+        app.state.monitoring_service = monitoring_service
         app.state.settings = settings
+        app.state.start_time = time.time()
 
         logger.info("All services initialized successfully")
 
@@ -82,11 +90,12 @@ async def lifespan(app: FastAPI):
         await disease_service.cleanup()
     if ai_service:
         await ai_service.cleanup()
+    if monitoring_service:
+        await monitoring_service.cleanup()
 
     logger.info("Shutdown complete")
 
 
-# Create FastAPI application
 app = FastAPI(
     title="Plant Leaf Disease Detector",
     description="AI-powered plant disease detection and treatment recommendation API",
